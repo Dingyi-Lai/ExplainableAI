@@ -14,15 +14,17 @@ library(ggplot2)
 ## Dingyi Lai
 
 ```{r}
-r2_all <- scan("data/r2_all.csv");n1=length(r2_all)
-r2_filtered <- scan("data/r2_filtered.csv");n2=length(r2_filtered)
+setwd("/Users/aubrey/Documents/GitHub/ExplainableAI/ConferenceSubmission")
+pearson_ti_shap_all <- read.csv("/Data/pearson_ti_shap_all.csv")[,2];n1=length(pearson_ti_shap_all)
+pearson_ti_shap_filtered <- read.csv("/Data/pearson_ti_shap_filtered.csv")[,2];n2=length(pearson_ti_shap_filtered)
 
-r2_rf = cbind.data.frame(rho = c(r2_all,r2_filtered), Type = c(rep("all",n1), rep("80%",n2)))
+pearson_ti_shap_rf = cbind.data.frame(rho = c(pearson_ti_shap_all,pearson_ti_shap_filtered), Type = c(rep("all",n1), rep("80%",n2)))
 ```
 
 ```{r}
-dRF = ggplot(r2_rf,aes(x=rho, fill=Type)) + geom_density(alpha=0.25, adjust = 0.6) + ggtitle("Random Forest") + xlab( expression(paste(rho)))
-dRF 
+dRF = ggplot(pearson_ti_shap_rf,aes(x=rho, fill=Type)) + geom_density(alpha=0.25, adjust = 0.6) + ggtitle("Random Forest for Regression") + xlab( expression(paste(rho)))
+dRF
+ggsave("Figures/All_Filtered_RF_Regression.pdf",dRF, width=4, height=4)
 ```
 
 

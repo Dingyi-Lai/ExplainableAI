@@ -1,0 +1,329 @@
+---
+title: "Potential Figures for Paper"
+author: "Loecher+Lai"
+date: "15/12/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggstatsplot)
+library(ggplot2)
+library(plyr)
+library(scales)
+setwd("/Users/aubrey/Documents/GitHub/ExplainableAI/ConferenceSubmission")
+getwd()
+
+```
+
+
+## Predictive Power of Feature Subsets
+
+### Random Forests
+
+```{r}
+corr_shap_ti_rmse <- read.csv("Data/ti&shap_resample/corr_shap_ti_rmse_p.csv")
+corr_shap_ti_nloss <- read.csv("Data/ti&shap_resample/corr_shap_ti_nloss.csv")
+
+# Rescale to nloss
+corr_shap_ti_rmse$perform <- (corr_shap_ti_rmse$perform-min(corr_shap_ti_rmse$perform))/(max(corr_shap_ti_rmse$perform)-min(corr_shap_ti_rmse$perform))*max(corr_shap_ti_nloss$perform)
+#  rescale(corr_shap_ti_rmse$perform,
+#                                    from = min(corr_shap_ti_nloss$perform),
+#                                    to = max(corr_shap_ti_nloss$perform))
+
+# Combine
+corr_shap_ti_rmse["type"] <- "Regression"
+corr_shap_ti_nloss["type"] <- "Classification"
+data <- rbind(corr_shap_ti_rmse,corr_shap_ti_nloss)
+#corr_shap_ti_f1 <- read.csv("data/corr_shap_ti_f1.csv")
+```
+
+Adjusted ggscatterstats() function
+```{r}
+myggscatterstats <- function(data,
+                             x,
+                             y,
+                             type = "parametric",
+                             conf.level = 0.95,
+                             bf.prior = 0.707,
+                             bf.message = TRUE,
+                             tr = 0.2,
+                             k = 2L,
+                             results.subtitle = TRUE,
+                             label.var = NULL,
+                             label.expression = NULL,
+                             marginal = TRUE,
+                             xfill = "#009E73",
+                             yfill = "#D55E00",
+                             point.args = list(
+                               size = 3,
+                               alpha = 0.4,
+                               stroke = 0,
+                               na.rm = TRUE
+                             ),
+                             point.width.jitter = 0,
+                             point.height.jitter = 0,
+                             point.label.args = list(size = 3, max.overlaps = 1e6),
+                             smooth.line.args = list(
+                               size = 1.5,
+                               color = "blue",
+                               method = "lm",
+                               formula = y ~ x,
+                               na.rm = TRUE
+                             ),
+                             xsidehistogram.args = list(
+                               fill = xfill,
+                               color = "black",
+                               na.rm = TRUE
+                             ),
+                             ysidehistogram.args = list(
+                               fill = yfill,
+                               color = "black",
+                               na.rm = TRUE
+                             ),
+                             xlab = NULL,
+                             ylab = NULL,
+                             title = NULL,
+                             subtitle = NULL,
+                             caption = NULL,
+                             ggtheme = ggstatsplot::theme_ggstatsplot(),
+                             ggplot.component = NULL,
+                             output = "plot") {
+  
+  # data ---------------------------------------
+  
+  # ensure the arguments work quoted or unquoted
+  c(x, y) %<-% c(ensym(x), ensym(y))
+  
+  # preparing the dataframe
+  # data %<>% filter(!is.na({{x}}), !is.na({{y}}))
+  
+  # statistical analysis ------------------------------------------
+  
+  # adding a subtitle with statistical results
+  if (results.subtitle) {
+    # convert entered stats type to a standard notation
+    type <- stats_type_switch(type)
+    
+    # relevant arguments for statistical tests
+    .f.args <- list(
+      data = data,
+      x = {{ x }},
+      y = {{ y }},
+      conf.level = conf.level,
+      k = k,
+      tr = tr,
+      bf.prior = bf.prior,
+      top.text = caption
+    )
+    
+    subtitle_df <- eval_f(corr_test, !!!.f.args, type = type)
+    subtitle <- if (!is.null(subtitle_df)) subtitle_df$expression[[1]]
+    
+    # preparing the BF message for null hypothesis support
+    if (type == "parametric" && bf.message) {
+      caption_df <- eval_f(corr_test, !!!.f.args, type = "bayes")
+      caption <- if (!is.null(caption_df)) caption_df$expression[[1]]
+    }
+  }
+  
+  # quit early if only subtitle is needed
+  if (output != "plot") {
+    return(switch(output,
+                  "caption" = caption,
+                  subtitle
+    ))
+  }
+  
+  # plot ------------------------------------------
+  
+  # creating jittered positions
+  pos <- position_jitter(width = point.width.jitter, height = point.height.jitter)
+  
+  # preparing the scatterplot
+  plot <- ggplot(data, mapping = aes({{ x }}, {{ y }})) +
+    exec(geom_point, position = pos, !!!point.args) +
+    exec(geom_smooth, level = conf.level, !!!smooth.line.args)
+  
+  # annotations -------------------------------------
+  
+  plot <- plot +
+    labs(
+      x = xlab %||% as_name(x),
+      y = ylab %||% as_name(y),
+      title = title,
+      subtitle = subtitle,
+      caption = caption
+    ) +
+    ggtheme +
+    ggplot.component
+  
+  # marginal  ---------------------------------------------
+  
+  if (marginal) {
+    # installed?
+    #check_if_installed("ggside", minimum_version = "0.1.2")
+    
+    # adding marginal distributions
+    plot <- plot +
+      exec(ggside::geom_xsidehistogram, mapping = aes(y = after_stat(count)), !!!xsidehistogram.args) +
+      exec(ggside::geom_ysidehistogram, mapping = aes(x = after_stat(count)), !!!ysidehistogram.args) +
+      #labs(x = NULL, y = NULL)
+      ggside::scale_ysidex_continuous(limits = NULL,n.breaks = NULL,
+                                      labels = NULL) +
+                                      # guide = guide_axis(angle = 90)) +
+      ggside::scale_xsidey_continuous(limits = NULL,n.breaks = NULL,
+                                      labels = NULL) +
+                                      # guide = guide_axis(angle = 90)) +
+      ggplot2::theme(axis.ticks.x=element_blank(),axis.ticks.y=element_blank())
+      #                axis.ticks.x=element_blank(),
+      #                axis.text.y=element_blank(),
+      #                axis.ticks.y=element_blank())
+  }
+  
+  # return the final plot
+  plot
+}
+```
+
+
+```{r}
+p1 = myggscatterstats(
+    data = data,
+    x = corr_ti,
+    y = corr_shap,
+    xlab = "SHAP",
+    ylab = "CFC",
+    #ysidehistogram.args = list(ggplot2::theme(axis.text.x=element_blank())),
+    bf.message = FALSE,
+    #grouping.var = "type",
+    #colour = "col",
+    #palette = c("#00AFBB", "#E7B800"),
+    results.subtitle = FALSE,
+    smooth.line.args = list(size = 0.25, color = "blue"),
+    point.args = list(size = 2, alpha = 0.4, stroke = 0),
+    title = "Predictive Power (Log Loss) of Feature Subsets",
+    ggplot.component = list(ggplot2::geom_point(aes(colour = perform,
+                                                    shape = type)))
+                            #ggplot2::theme(axis.ticks=element_blank()))
+                            # ggplot2::guides(colour = guide_colourbar(order = 1),
+                            # alpha = guide_legend(legend.position ="bottom",order = 2),
+                            # shape = guide_legend(order = 3)),
+                            # ggplot2::scale_alpha(guide = "legend"),
+                            # ggplot2::scale_colour_continuous(guide = "legend"),
+                            #ggplot2::scale_shape(guide = "legend"))
+)
+
+
+ggsave("Figures/PredictiveLoss_LL.pdf",p1, width=6, height=4)
+p1
+
+```
+
+I rescale the range of rmse to that of nloss.
+
+The Logloss/rmse is almost small because the points are mostly light and the correlations between perform and ti/shap is mostly gather at the left bottom.
+The higher important one feature is used during prediction, the lower the Logloss/rmse.
+
+## Arranging on grid
+
+```{r}
+# colnames(corr_shap_ti_mse)[4] = "LL"
+# p1a = ggscatterstats(
+#     data = corr_shap_ti_mse,
+#     x = corr_ti,
+#     y = corr_shap,
+#     xlab = "SHAP",
+#     ylab = "CFC",
+#     bf.message = FALSE,
+#     results.subtitle = FALSE,
+#     smooth.line.args = list(size = 0.25, color = "blue"),
+#     point.args = list(size = 2, alpha = 0.4, stroke = 0),
+#     title = "MSE", ggplot.component = list(ggplot2::geom_point(aes(color = LL)), ggplot2::theme(legend.position = c(0.85, 0.3)))
+# )
+# 
+# colnames(corr_shap_ti_f1)[4] = "F1"
+# p2a =ggscatterstats(
+#     data = corr_shap_ti_f1,
+#     x = corr_ti,
+#     y = corr_shap,
+#     xlab = "SHAP",
+#     ylab = "CFC",
+#     bf.message = FALSE,
+#     results.subtitle = FALSE,
+#     smooth.line.args = list(size = 0.25, color = "blue"),
+#     point.args = list(size = 2, alpha = 0.4, stroke = 0),
+#     title = "F1 score", ggplot.component = list(ggplot2::geom_point(aes(color = F1)), ggplot2::theme(legend.position = c(0.85, 0.3)))
+# )
+
+
+```
+
+
+
+```{r}
+#ggpubr::ggarrange(p1,p2)
+
+# library(grid)
+# library(gridExtra)
+# #p12 = grid.arrange(p1a, p2a, ncol=2, nrow=1,
+# p12 = grid.arrange(p1a, ncol=2, nrow=1,
+#      top = textGrob("Predictive Power of Feature Subsets",gp=gpar(fontsize=12,font=3)))
+# 
+# ggsave("figures/Predictive_MSE_both.pdf",p12, width=8, height=4)
+```
+
+```{r}
+#ggpubr::ggarrange(p1,p2)
+
+# p12 = grid.arrange(p1a, p2a, ncol=1, nrow=2,
+#      top = textGrob("Predictive Power of Feature Subsets",gp=gpar(fontsize=12,font=3)))
+# 
+# ggsave("figures/PredictiveLoss_2x1.pdf",p12, width=4, height=6)
+```
+
+
+### Boosting
+
+```{r}
+# corr_shap_ti_nloss <- read.csv("data/boosting_corr_shap_ti_nloss.csv")
+# 
+# corr_shap_ti_f1 <- read.csv("data/boosting_corr_shap_ti_f1.csv")
+```
+
+```{r}
+# colnames(corr_shap_ti_nloss)[4] = "LL"
+# p1a = ggscatterstats(
+#     data = corr_shap_ti_nloss,
+#     x = corr_ti,
+#     y = corr_shap,
+#     xlab = "SHAP",
+#     ylab = "CFC",
+#     bf.message = FALSE,
+#     results.subtitle = FALSE,
+#     smooth.line.args = list(size = 0.25, color = "blue"),
+#     point.args = list(size = 2, alpha = 0.4, stroke = 0),
+#     title = "Log Loss", ggplot.component = list(ggplot2::geom_point(aes(color = LL)), ggplot2::theme(legend.position = c(0.85, 0.3)))
+# )
+# 
+# colnames(corr_shap_ti_f1)[4] = "F1"
+# p2a =ggscatterstats(
+#     data = corr_shap_ti_f1,
+#     x = corr_ti,
+#     y = corr_shap,
+#     xlab = "SHAP",
+#     ylab = "CFC",
+#     bf.message = FALSE,
+#     results.subtitle = FALSE,
+#     smooth.line.args = list(size = 0.25, color = "blue"),
+#     point.args = list(size = 2, alpha = 0.4, stroke = 0),
+#     title = "F1 score", ggplot.component = list(ggplot2::geom_point(aes(color = F1)), ggplot2::theme(legend.position = c(0.85, 0.3)))
+# )
+# 
+# p12 = grid.arrange(p1a, p2a, ncol=1, nrow=2,
+#      top = textGrob("Predictive Power of Feature Subsets",gp=gpar(fontsize=12,font=3)))
+# 
+# p12
+# ggsave("figures/PredictiveLoss_2x1_boosting.pdf",p12, width=4, height=6)
+```
+```
