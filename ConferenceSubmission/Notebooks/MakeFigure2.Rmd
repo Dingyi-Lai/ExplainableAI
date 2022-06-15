@@ -1,0 +1,100 @@
+---
+title: "Potential Figures for Paper"
+author: "Loecher"
+date: "7/8/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+#library(ggstatsplot)
+library(ggplot2)
+```
+
+## Dingyi Lai
+
+```{r}
+r2_all <- scan("data/r2_all.csv");n1=length(r2_all)
+r2_filtered <- scan("data/r2_filtered.csv");n2=length(r2_filtered)
+
+r2_rf = cbind.data.frame(rho = c(r2_all,r2_filtered), Type = c(rep("all",n1), rep("80%",n2)))
+```
+
+```{r}
+dRF = ggplot(r2_rf,aes(x=rho, fill=Type)) + geom_density(alpha=0.25, adjust = 0.6) + ggtitle("Random Forest") + xlab( expression(paste(rho)))
+dRF 
+```
+
+
+
+## Qi Wu
+### Fig 2 for random forests
+
+```{r}
+r2_all <- scan("data/r2_all.csv");n1=length(r2_all)
+r2_filtered <- scan("data/r2_filtered.csv");n2=length(r2_filtered)
+
+r2_rf = cbind.data.frame(rho = c(r2_all,r2_filtered), Type = c(rep("all",n1), rep("80%",n2)))
+```
+
+```{r}
+dRF = ggplot(r2_rf,aes(x=rho, fill=Type)) + geom_density(alpha=0.25, adjust = 0.6) + ggtitle("Random Forest") + xlab( expression(paste(rho)))
+dRF 
+```
+
+### Fig 2 for boosting
+
+```{r}
+r2_all <- read.csv("data/boosting_r2_all.csv");
+r2_filtered <- read.csv("data/boosting_r2_filtered.csv");
+
+r2_all = na.omit(r2_all[,2])
+r2_filtered = na.omit(r2_filtered[,2])
+n1=length(r2_all)
+n2=length(r2_filtered)
+r2_boost = cbind.data.frame(rho = c(r2_all,r2_filtered), Type = c(rep("all",n1), rep("80%",n2)))
+```
+
+```{r}
+dXGB = ggplot(r2_boost,aes(x=rho, fill=Type)) + geom_density(alpha=0.25, adjust = 0.6) + ggtitle("Boosted Trees") + xlab( expression(paste(rho)))
+dXGB 
+```
+
+```{r, eval=FALSE}
+#dRF = ggplot(r2,aes(x=rho, fill=Type)) + geom_histogram(alpha=0.25,binwidth = 0.1,)
+#dRF
+library(ridgeline)
+
+ridgeline(r2$rho, r2$Type, bw = 0.05)
+```
+
+
+
+```{r,eval=FALSE}
+#ggpubr::ggarrange(p1,p2)
+
+library(grid)
+library(gridExtra)
+p12 = grid.arrange(dRF, dXGB, ncol=1, nrow=2,
+     top = textGrob("Correlations: SHAP and CFC",gp=gpar(fontsize=12,font=3)))
+
+ggsave("figures/Correlations_SHAP_CFC_2x1.pdf",p12, width=4, height=6)
+
+p21 = grid.arrange(dRF, dXGB, ncol=2, nrow=1,
+     top = textGrob("Correlations: SHAP and CFC",gp=gpar(fontsize=12,font=3)))
+
+ggsave("figures/Correlations_SHAP_CFC_1x2.pdf",p21, width=6, height=3)
+```
+
+```{r}
+n1=nrow(r2_rf)
+n2=nrow(r2_boost)
+r2 = cbind.data.frame(rbind(r2_rf,r2_boost), Method = c(rep("random forest",n1), rep("boosted trees",n2)))
+```
+
+```{r}
+dxgb_rf = ggplot(r2,aes(x=rho, fill=Type)) + geom_density(alpha=0.25, adjust = 0.6)  + xlab( expression(paste(rho))) + facet_wrap(~Method,ncol=1) +  
+theme(legend.position=c(.1,.85),legend.text=element_text(size=8),legend.title=element_text(size=9))
+dxgb_rf 
+ggsave("/Users/loecherm/Dropbox/QiWu/Publication/AISTATS/figures/Correlations_SHAP_CFC_both.pdf",dxgb_rf, width=4, height=4)
+```
