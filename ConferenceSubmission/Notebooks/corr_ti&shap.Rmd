@@ -1,0 +1,56 @@
+---
+title: "corr_ti&shap"
+author: "Dingyi Lai"
+date: "12/2/2021"
+output: html_document
+---
+
+```{r}
+setwd("/Users/aubrey/Documents/SHK/Dropbox/Dingyi/Data/ti&shap_full")
+getwd()
+```
+
+
+```{r}
+library(ggplot2)
+
+dataname <- c('abalone', 'bike', 'boston', 'concrete', 'cpu', 'csm', 'fb', 'parkinsons','servo', 'solar','synthetic')
+Cor_pearson <- c()
+Cor_spearman <- c()
+for(i in dataname){
+  ti <- read.csv(file = paste0('ti_',i,'.csv'))[,-c(1)]
+  shap <- read.csv(file = paste0('shap_',i,'.csv'))[,-c(1)]
+  for(j in colnames(ti)){
+    Cor_pearson <- c(Cor_pearson,as.numeric(cor(ti[j], shap[j])))
+    Cor_spearman <- c(Cor_spearman,as.numeric(cor(ti[j], shap[j])))
+    print(paste0("The pearson correlation of treeinterpreter and shap value in ",i," with regard to ", j, " is ", round(cor(ti[j], shap[j]), digits = 4)))
+    print(paste0("The spearman correlation of treeinterpreter and shap value in  ",i," with regard to ", j, " is ", round(cor(ti[j], shap[j], method = 'spearman'), digits = 4)))
+    temp <- data.frame(c(ti[j],shap[j]))
+    colnames(temp) <- c("ti","shap")
+    # Basic scatter plot
+    print(ggplot(temp, aes(x=ti, y=shap)) + geom_point() +
+      geom_smooth()+
+      geom_smooth(method='lm', color='red')+
+      labs(title=paste0("The scatter plot of treeinterpreter and shap value in ",i," with regard to ", j),
+       x=paste0("ti_",i,"_",j), y = paste0("shap_",i,"_",j)))
+  }
+}
+```
+
+# Pearson Correlation
+```{r}
+summary(Cor_pearson)
+boxplot(Cor_pearson)
+
+# output the results
+write.csv(Cor_pearson, file = "Cor_pearson.csv")
+```
+
+# Spearman Correlation
+
+```{r}
+summary(Cor_spearman)
+boxplot(Cor_spearman)
+
+```
+
