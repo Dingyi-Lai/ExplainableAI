@@ -15,7 +15,7 @@ from scipy.sparse import issparse
 # from itertools import compress
 # import operator
 from sklearn.metrics import mean_squared_error # squared=False -> root version
-path = '/Users/aubrey/Documents/SHK/Dropbox/Dingyi/Data/'
+path = '/Users/aubrey/Documents/GitHub/ExplainableAI/ConferenceSubmission/Data/'
 from treeinterpreter import treeinterpreter as ti
 from sklearn.ensemble import RandomForestRegressor
 np.random.seed(0) # keep consistent
@@ -187,7 +187,8 @@ def get_potential_splits(X, random_subspace = None, random_state=None):
     if random_subspace and random_subspace <= len(column_indices):  # Randomly chosen features
         # column_indices = random.sample(population=column_indices, k=random_subspace)
         # random_instance = check_random_state(random_state)
-        column_indices = np.array(column_indices)[sample_without_replacement(n_population=len(column_indices), n_samples=random_subspace, random_state=random_state)]
+        column_indices = np.array(column_indices)[sample_without_replacement(n_population=len(column_indices),\
+         n_samples=random_subspace, random_state=random_state)]
     for column_index in column_indices:
         potential_splits[column_index] = [] 
         values = X[:, column_index] 
@@ -381,10 +382,6 @@ def random_forest_algorithm_oob(X, y, n_trees, n_features=None, dt_max_depth=2,t
     # would have got if we hadn't used a warm_start.
     seed = random_instance.randint(MAX_INT, size=n_trees)
 
-    # if issparse(X):
-    #     X = X.tocsr()
-
-    n_samples = y.shape[0]
 
     # inbag_pred = np.zeros(n_samples, dtype=np.float64)
     oob_pred = np.zeros(n_samples, dtype=np.float64)
@@ -408,10 +405,12 @@ def random_forest_algorithm_oob(X, y, n_trees, n_features=None, dt_max_depth=2,t
             
             X_oob = X.iloc[unsampled_indices] # about a third of the data are test data
             # y_test = y.iloc[unsampled_indices]
+            # random_seed = seed[i]
         else:
             X_inbag = X
             y_inbag = y
             X_oob = X
+            # random_seed = random_instance
 
         tree, feature_gain0 = decision_tree_algorithm(X_inbag, y_inbag,
                                                       max_depth=dt_max_depth,
