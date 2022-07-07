@@ -203,7 +203,7 @@ def get_potential_splits(X, random_subspace = None, random_state=None):
                 # Consider all values which lie between two values as a potential split
                 
                 potential_splits[column_index].append(potential_split)
-    
+    # print(column_indices)
     return potential_splits
 
 def create_leaf(y, typ):
@@ -236,6 +236,7 @@ def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=5, mi
     'same function as in the Decision Tree notebook but now we add random_subspace argument'
     # random_state = check_random_state(random_state)
     # Data preparation
+
     if counter == 0:  # Counter tells us how deep the tree is, this is before the tree is initiated
         global COLUMN_HEADERS, FEATURE_TYPES
         COLUMN_HEADERS = X.columns
@@ -411,14 +412,14 @@ def random_forest_algorithm_oob(X, y, n_trees, n_features=None, dt_max_depth=2,t
             y_inbag = y
             X_oob = X
             # random_seed = random_instance
-
+        # random.seed(seed[i])
         tree, feature_gain0 = decision_tree_algorithm(X_inbag, y_inbag,
                                                       max_depth=dt_max_depth,
                                                       random_subspace=n_features,
                                                       tree_num=i,typ=typ,k=k,
                                                       min_samples_split=min_samples_split, 
                                                       min_samples_leaf=min_samples_leaf,
-                                                      random_state=seed[i]) #creates individual trees
+                                                      random_state=None) #creates individual trees
 
         # if we only consider oob
         y_predict_oob = decision_tree_predictions(X_oob, tree)
