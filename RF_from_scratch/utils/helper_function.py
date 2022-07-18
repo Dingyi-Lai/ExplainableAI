@@ -217,14 +217,13 @@ def get_potential_splits(X, random_subspace = None, random_state=None):
     _, n_columns = X.shape  # No need for rows, we choose the column to split on
     # Only need second value of .shape which is columns
     
-    
+    column_indices = list(range(n_columns))
     if random_subspace and random_subspace <= len(column_indices):  # Randomly chosen features
         # column_indices = random.sample(population=column_indices, k=random_subspace)
         # random_instance = check_random_state(random_state)
         column_indices = np.array(column_indices)[sample_without_replacement(n_population=len(column_indices),\
          n_samples=random_subspace, random_state=random_state)]
-    else:
-        column_indices = list(range(n_columns))
+
     for column_index in column_indices:
         potential_splits[column_index] = [] 
         values = X[:, column_index] 
@@ -533,29 +532,31 @@ def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_sampl
     _, feature_gain, mse_oob_pred = random_forest_algorithm_oob(X, y,n_trees=n_trees, n_features=n_features,
                                                     dt_max_depth=dt_max_depth,typ=typ,k=k, random_state=random_state,
                                                      oob_score=oob_score, min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf)
-    # store the feature_importance
-    feature_gain_result = pd.DataFrame(columns=["tree_num","feature", "value"])
-    for i,j in enumerate(feature_gain):
-        if j != -1:
-            feature_gain_result.loc[i] = j
-            if pd.api.types.is_list_like(j[2]) ==True:
-                feature_gain_result.loc[i,"value"] = j[2][0]
+#     # store the feature_importance
+#     feature_gain_result = pd.DataFrame(columns=["tree_num","feature", "value"])
+#     for i,j in enumerate(feature_gain):
+#         if j != -1:
+#             feature_gain_result.loc[i] = j
+#             if pd.api.types.is_list_like(j[2]) ==True:
+#                 breakpoint()
+#                 feature_gain_result.loc[i,"value"] = j[2][0]
     
-#     # predict y
-#     y_predict_from_scratch = random_forest_predictions(X_test, forest)
-#     y_predict_sklearn = rf.predict(X_test)
+# #     # predict y
+# #     y_predict_from_scratch = random_forest_predictions(X_test, forest)
+# #     y_predict_sklearn = rf.predict(X_test)
 
-#     # mean_squared_error
-#     mse_from_scratch = mean_squared_error(y_test,y_predict_from_scratch)
-#     mse_sklearn = mean_squared_error(y_test,y_predict_sklearn)
+# #     # mean_squared_error
+# #     mse_from_scratch = mean_squared_error(y_test,y_predict_from_scratch)
+# #     mse_sklearn = mean_squared_error(y_test,y_predict_sklearn)
 
-    # sum the feature importance of included features
-    fi_simulation = feature_gain_result.groupby(['tree_num','feature']).sum()
-    fi_simulation_s = fi_simulation.groupby(['feature']).sum()
-    fi_simulation_s = fi_simulation_s.sort_values("value")
+#     # sum the feature importance of included features
+#     fi_simulation = feature_gain_result.groupby(['tree_num','feature']).sum()
+#     fi_simulation_s = fi_simulation.groupby(['feature']).sum()
+#     fi_simulation_s = fi_simulation_s.sort_values("value")
 
     print('------',time.time()-start,'s ------')
-    return fi_simulation_s, mse_oob_pred
+    # fi_simulation_s,
+    return mse_oob_pred
 # , mse_sklearn, fi_sklearn
 
 
@@ -602,23 +603,27 @@ def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_s
     # Iterate to store ti and shap
     # mse_k0_from_scratch_inbag = []
     # mse_k0_from_scratch_oob = []
-    fi_k0_simulation_s = {}
+
+    # fi_k0_simulation_s = {}
     mse_k0_oob_pred = []
 
     # mse_k1_from_scratch_inbag = []
     # mse_k1_from_scratch_oob = []
-    fi_k1_simulation_s = {}
+
+    # fi_k1_simulation_s = {}
     mse_k1_oob_pred = []
 
     mse_k0_sklearn_oob = []
 
-    fi_k0_simulation_s['df_{}'.format(name)],mse_oob_pred = generate_mse_fi(X,y, k=0, n_trees=n_trees,\
+    # fi_k0_simulation_s['df_{}'.format(name)],
+    mse_oob_pred = generate_mse_fi(X,y, k=0, n_trees=n_trees,\
         random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
     # mse_k0_from_scratch_inbag.append(mse_inbag)
     # mse_k0_from_scratch_oob.append(mse_oob)
     mse_k0_oob_pred.append(mse_oob_pred)
 
-    fi_k1_simulation_s['df_{}'.format(name)],mse_oob_pred = generate_mse_fi(X,y, k=1, n_trees=n_trees,\
+    # fi_k1_simulation_s['df_{}'.format(name)],
+    mse_oob_pred = generate_mse_fi(X,y, k=1, n_trees=n_trees,\
         random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
     # mse_k1_from_scratch_inbag.append(mse_inbag)
     # mse_k1_from_scratch_oob.append(mse_oob)
