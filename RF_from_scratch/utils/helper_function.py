@@ -168,45 +168,53 @@ def determine_best_split(X, y, potential_splits,typ="regression",k=0):
     
     'selects which split lowered gini/mse the most'
     first_iteration = True
-    n_final=len(y)
+    # n_final=len(y)
     overall_impurity = calculate_impurity(y,typ=typ,k=k)  # the function will loop over and replace this with lower impurity values
     overall_impurity_for_gain = overall_impurity.copy()
     best_split_column=[]
     best_split_value=[]
-    impurity = []
+    # impurity = []
     n_final = []
     for column_index in potential_splits:
         for value in potential_splits[column_index]:
             _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=value)
-            #check that both children have samnples sizes at least k+1! 
-            if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)): 
-                current_overall_impurity, n = calculate_overall_impurity(y_below, y_above,k=k, typ=typ)
-                impurity.append(current_overall_impurity)
-                # # Goes through each potential split and only updates if it lowers entropy
-                # 
-                if first_iteration or current_overall_impurity < overall_impurity: 
-                    first_iteration = False
-                    overall_impurity = current_overall_impurity # Updates only if lower entropy split found, in the end this is greedy search
-                    # best_split_column = column_index
-                    # best_split_value = value
-                    best_split_column = [column_index]
-                    best_split_value = [value]
-                    n_final = [n]
-                if current_overall_impurity == overall_impurity: 
-                    best_split_column.append(column_index)
-                    best_split_value.append(value)
-                    n_final.append(n)
+            # check that both children have samples sizes at least k+1! 
+            # if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)): 
+            current_overall_impurity, n = calculate_overall_impurity(y_below, y_above,k=k, typ=typ)
+            # impurity.append(current_overall_impurity)
+            # # Goes through each potential split and only updates if it lowers entropy
+            # 
+            if first_iteration or current_overall_impurity < overall_impurity: 
+                first_iteration = False
+                overall_impurity = current_overall_impurity # Updates only if lower entropy split found, in the end this is greedy search
+                # best_split_column = column_index
+                # best_split_value = value
+                best_split_column = [column_index]
+                best_split_value = [value]
+                n_final = [n]
+            if current_overall_impurity == overall_impurity: 
+                best_split_column.append(column_index)
+                best_split_value.append(value)
+                n_final.append(n)
 
     # randomly select multiple potential splits
     record = pd.DataFrame([best_split_column,best_split_value,n_final]).transpose()
     record.columns = ['best_split_column','best_split_value','n_final']
-    result = record.sample()
+    # breakpoint()
+    # result = record.sample()
+    try:
+        result = record.sample()
+    except:
+        # print(len(y_below), len(y))
+        print(potential_splits)
+        print(record)
+        raise
 
     gain = overall_impurity_for_gain - current_overall_impurity
     rescale_gain = gain*result.n_final/len(y) #might only use rescale_gain
     return int(result.best_split_column), float(result.best_split_value), rescale_gain
 
-def get_potential_splits(X, random_subspace = None, random_state=None):
+def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0):
     # ,min_samples_leaf=1
     
     'first, takes every unique value of every feature in the feature space, then finds the midpoint between each value'
@@ -239,9 +247,15 @@ def get_potential_splits(X, random_subspace = None, random_state=None):
                 # potential_split = rand_uniform(previous_value,current_value,random_state)
                 if potential_split == current_value:
                     potential_split = previous_value
-                # Draw a random threshold, the same as spitter.pyx
+
+                # try to split the data
+                _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split)
                 # Reject if min_samples_leaf is not guaranteed
-                potential_splits[column_index].append(potential_split)
+                # check that both children have samples sizes at least k+1! 
+                if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)): 
+                    potential_splits[column_index].append(potential_split)
+                else:
+                    potential_splits.remove(column_index)
     # print(column_indices)
     return potential_splits
 
@@ -283,17 +297,15 @@ def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=5, mi
         X = X.values  # Change all to NumPy array for faster calculations
         y = y.values
     # If we have started the tree, X should already be a NumPy array from the code above
-        
+    potential_splits = get_potential_splits(X, y, random_subspace, random_state, k)  # Check for all possible splits ONLY using the random subspace and not all features!    
     # Base cases
-    if (check_purity(y)) or (len(y) < min_samples_leaf) or (counter == max_depth) or (X.shape[0]<min_samples_split):
+    if (check_purity(y)) or (len(y) < min_samples_leaf) or (counter == max_depth) or (X.shape[0]<min_samples_split) or potential_splits=={}:
         classification, feature_name = create_leaf(y, typ)
         return classification, feature_name
 
     # Recursive part
     else:
         counter += 1  # Tells us how deep the tree is
-        # Helper functions
-        potential_splits = get_potential_splits(X, random_subspace, random_state)  # Check for all possible splits ONLY using the random subspace and not all features!
         # print(potential_splits)
         best_split_column, best_split_value, gain = determine_best_split(X, y, potential_splits,typ=typ,k=k)  # Select best split based on impurity
         # print(best_split_column, best_split_value, gain)

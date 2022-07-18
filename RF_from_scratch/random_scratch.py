@@ -124,9 +124,12 @@ y = data['boston'].iloc[:,-1] # the last column is y
 # # [23.113725992659568] [23.113725992659568] [23.135379726705654]
 # %%
 # a single regression tree with feature subsampling and no bootstrap
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
-
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# # ------ 0.21591901779174805 s ------
+# # ------ 0.21916794776916504 s ------
+# # ------ 0.005674600601196289 s ------
+# # [64.00768654985019] [52.15038252715985] [64.17827808693566]
 # %%
 # a regression random forest with feature subsampling and no ootstrap
 mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = False,  dt_max_depth=2)
