@@ -21,6 +21,7 @@ from sklearn.ensemble import RandomForestRegressor
 np.random.seed(0) # keep consistent
 random.seed(0)
 from sklearn.utils.random import sample_without_replacement
+# from ..utils import rand_uniform
 # from .utils.random import sample_without_replacement
 
 def check_random_state(seed):
@@ -48,6 +49,24 @@ def check_random_state(seed):
     raise ValueError(
         "%r cannot be used to seed a numpy.random.RandomState instance" % seed
     )
+
+
+def our_rand_r(seed: np.uint32):
+    """Generate a pseudo-random np.uint32 from a np.uint32 seed"""
+    # seed shouldn't ever be 0.
+    if (seed == None or seed == 0): seed = 1
+
+    seed *= np.uint32(seed << 13)
+    seed *= np.uint32(seed >> 17)
+    seed *= np.uint32(seed << 5)
+
+    return seed % (np.uint32(0x7FFFFFFF) + 1)
+
+def rand_uniform(low:float,high:float,random_state:np.uint32):
+    """Generate a random double in [low; high)."""
+    return float(((high - low) * float(our_rand_r(random_state)) /
+            float(np.uint32(0x7FFFFFFF))) + low)
+
 
 def check_purity(y, typ='regression'):
     
@@ -152,28 +171,43 @@ def determine_best_split(X, y, potential_splits,typ="regression",k=0):
     n_final=len(y)
     overall_impurity = calculate_impurity(y,typ=typ,k=k)  # the function will loop over and replace this with lower impurity values
     overall_impurity_for_gain = overall_impurity.copy()
-    best_split_column=0
-    best_split_value=0
+    best_split_column=[]
+    best_split_value=[]
+    impurity = []
+    n_final = []
     for column_index in potential_splits:
         for value in potential_splits[column_index]:
             _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=value)
             #check that both children have samnples sizes at least k+1! 
             if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)): 
                 current_overall_impurity, n = calculate_overall_impurity(y_below, y_above,k=k, typ=typ)
-            
-                # Goes through each potential split and only updates if it lowers entropy
+                impurity.append(current_overall_impurity)
+                # # Goes through each potential split and only updates if it lowers entropy
+                # 
                 if first_iteration or current_overall_impurity < overall_impurity: 
                     first_iteration = False
                     overall_impurity = current_overall_impurity # Updates only if lower entropy split found, in the end this is greedy search
-                    best_split_column = column_index
-                    best_split_value = value
-                    n_final = n
+                    # best_split_column = column_index
+                    # best_split_value = value
+                    best_split_column = [column_index]
+                    best_split_value = [value]
+                    n_final = [n]
+                if current_overall_impurity == overall_impurity: 
+                    best_split_column.append(column_index)
+                    best_split_value.append(value)
+                    n_final.append(n)
 
-    gain = overall_impurity_for_gain - overall_impurity
-    rescale_gain = gain*n_final/len(y) #might only use rescale_gain
-    return best_split_column, best_split_value, rescale_gain
+    # randomly select multiple potential splits
+    record = pd.DataFrame([best_split_column,best_split_value,n_final]).transpose()
+    record.columns = ['best_split_column','best_split_value','n_final']
+    result = record.sample()
+
+    gain = overall_impurity_for_gain - current_overall_impurity
+    rescale_gain = gain*result.n_final/len(y) #might only use rescale_gain
+    return int(result.best_split_column), float(result.best_split_value), rescale_gain
 
 def get_potential_splits(X, random_subspace = None, random_state=None):
+    # ,min_samples_leaf=1
     
     'first, takes every unique value of every feature in the feature space, then finds the midpoint between each value'
     'modified to add random_subspace for random forest'
@@ -182,26 +216,32 @@ def get_potential_splits(X, random_subspace = None, random_state=None):
     potential_splits = {}
     _, n_columns = X.shape  # No need for rows, we choose the column to split on
     # Only need second value of .shape which is columns
-    column_indices = list(range(n_columns))
+    
     
     if random_subspace and random_subspace <= len(column_indices):  # Randomly chosen features
         # column_indices = random.sample(population=column_indices, k=random_subspace)
         # random_instance = check_random_state(random_state)
         column_indices = np.array(column_indices)[sample_without_replacement(n_population=len(column_indices),\
          n_samples=random_subspace, random_state=random_state)]
+    else:
+        column_indices = list(range(n_columns))
     for column_index in column_indices:
         potential_splits[column_index] = [] 
         values = X[:, column_index] 
-        unique_values = np.unique(values)  # Get all unique values in each column
+        unique_values = np.sort(np.unique(values))  # Get all unique values in each column
 
         for index in range(len(unique_values)):  # All unique feature values
             if index != 0:  # Skip first value, we need the difference between next values
+                # Stop early if remaining features are constant
                 current_value = unique_values[index]
                 previous_value = unique_values[index - 1]  # Find a value and the next smallest value
                 potential_split = (current_value + previous_value) / 2  # Find difference between the two as a potential split
-                
-                # Consider all values which lie between two values as a potential split
-                
+                # print(random_state)
+                # potential_split = rand_uniform(previous_value,current_value,random_state)
+                if potential_split == current_value:
+                    potential_split = previous_value
+                # Draw a random threshold, the same as spitter.pyx
+                # Reject if min_samples_leaf is not guaranteed
                 potential_splits[column_index].append(potential_split)
     # print(column_indices)
     return potential_splits
@@ -255,7 +295,9 @@ def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=5, mi
         counter += 1  # Tells us how deep the tree is
         # Helper functions
         potential_splits = get_potential_splits(X, random_subspace, random_state)  # Check for all possible splits ONLY using the random subspace and not all features!
+        # print(potential_splits)
         best_split_column, best_split_value, gain = determine_best_split(X, y, potential_splits,typ=typ,k=k)  # Select best split based on impurity
+        # print(best_split_column, best_split_value, gain)
         X_below, X_above, y_below, y_above = split_data(X, y, best_split_column, best_split_value)  # Execute best split
         
         # check for empty data or too few samples
