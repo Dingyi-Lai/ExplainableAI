@@ -73,36 +73,46 @@ y = data['boston'].iloc[:,-1] # the last column is y
 # from sklearn import datasets
 # X,y = datasets.load_boston(return_X_y=True)
 
-# # Fit regression model
-# regr_1 = DecisionTreeRegressor(max_depth=8)
-# #regr_2 = DecisionTreeRegressor(max_depth=5)
-# regr_1.fit(X, y)
-# #regr_2.fit(X, y)
-# # Predict
-# mse_sklearn = mean_squared_error(y, regr_1.predict(X))
-# print(mse_sklearn)
+# Fit regression model
+regr_1 = DecisionTreeRegressor(max_depth=8)
+#regr_2 = DecisionTreeRegressor(max_depth=5)
+regr_1.fit(X, y)
+#regr_2.fit(X, y)
+# Predict
+mse_sklearn = mean_squared_error(y, regr_1.predict(X))
+print(mse_sklearn)
 # # 2.08803819218943
 # %%
-# # X = pd.DataFrame(X)
-# # y = pd.DataFrame(y)
-# sub_tree, feature_gain = decision_tree_algorithm(X, y, max_depth=8)
-# y_2 = decision_tree_predictions(X, sub_tree)
-# mse_from_scratch = mean_squared_error(y, y_2)
-# print(mse_from_scratch)
+# X = pd.DataFrame(X)
+# y = pd.DataFrame(y)
+sub_tree, feature_gain = decision_tree_algorithm(X, y, max_depth=8)
+y_2 = decision_tree_predictions(X, sub_tree)
+mse_from_scratch = mean_squared_error(y, y_2)
+print(mse_from_scratch)
 # # 2.0880381921894298
 # %%
 # # a single regression tree with no feature subsampling and without bootstrap
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # # ------ 0.9376490116119385 s ------
 # # ------ 0.9324202537536621 s ------
 # # ------ 0.007030010223388672 s ------
 # # [25.699467452126065] [25.69946745212606] [25.69946745212606]
 
 # %%
+# # a regression RF with no feature subsampling and without bootstrap
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# ----- 61.65685510635376 s ------
+# ------ 60.82962894439697 s ------
+# ------ 0.07924890518188477 s ------
+# [25.69946745212606] [25.699467452126065] [25.699467452126065]
+
+
+# %%
 # # a single regression tree with no feature subsampling and with bootstrap
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # # /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:491: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
 # #   warn(
 # # ------ 0.655552864074707 s ------
@@ -116,30 +126,81 @@ y = data['boston'].iloc[:,-1] # the last column is y
 
 # %%
 # # a regression RF with no feature subsampling and with bootstrap
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
-# # print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # # ------ 32.942935943603516 s ------
 # # ------ 33.01469707489014 s ------
 # # ------ 0.1290581226348877 s ------
 # # [23.113725992659568] [23.113725992659568] [23.135379726705654]
 # %%
 # a single regression tree with feature subsampling and no bootstrap
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
-# # ------ 0.21591901779174805 s ------
-# # ------ 0.21916794776916504 s ------
-# # ------ 0.005674600601196289 s ------
-# # [64.00768654985019] [52.15038252715985] [64.17827808693566]
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# ------ 0.2865259647369385 s ------
+# ------ 0.13503503799438477 s ------
+# ------ 0.005311012268066406 s ------
+# [64.00768654985019] [38.40300451767492] [51.366611451878995]
+# ------ 0.10162496566772461 s ------
+# ------ 0.23761296272277832 s ------
+# ------ 0.005176067352294922 s ------
+# [64.00768654985019] [58.187122237621644] [30.810978920070944]
+# ------ 0.09970784187316895 s ------
+# ------ 0.20720887184143066 s ------
+# ------ 0.005237102508544922 s ------
+# [64.00768654985019] [51.03560902235516] [64.60557235225404]
+
 # %%
-# a regression random forest with feature subsampling and no ootstrap
+# a regression random forest with feature subsampling and no bootstrap
 mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = False,  dt_max_depth=2)
 print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
-
+# ------ 10.55643105506897 s ------
+# ------ 9.791516065597534 s ------
+# ------ 0.05379915237426758 s ------
+# [34.99152622195074] [30.906436610402746] [31.7482401369076]
+# ------ 9.629955053329468 s ------
+# ------ 10.781270980834961 s ------
+# ------ 0.06485915184020996 s ------
+# [34.99152622195074] [34.262088554629855] [29.765367723239653]
+# ------ 10.295475006103516 s ------
+# ------ 10.058604001998901 s ------
+# ------ 0.060658931732177734 s ------
+# [34.99152622195074] [31.856507026337706] [29.99992838637719]
 # %%
 # a single regression tree with feature subsampling and bootstrap
 mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
 print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
-
+# /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:503: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.09021592140197754 s ------
+# /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:503: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.12968111038208008 s ------
+# /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/ensemble/_forest.py:560: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.0045697689056396484 s ------
+# [390.9139101879343] [388.11922660345635] [386.6947914073517]
+# /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:502: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.18427181243896484 s ------
+# /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:502: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.11977887153625488 s ------
+# /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/ensemble/_forest.py:560: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.00526118278503418 s ------
+# [390.9139101879343] [377.6485915428245] [377.89161267123524]
+# %%
+# a regression random forest with feature subsampling and bootstrap
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# ------ 6.87406587600708 s ------
+# ------ 7.471606016159058 s ------
+# ------ 0.1135549545288086 s ------
+# [39.486221920196286] [36.715550187490756] [33.374701364511736]
+# ------ 6.412090063095093 s ------
+# ------ 7.336228132247925 s ------
+# ------ 0.08517980575561523 s ------
+# [39.486221920196286] [38.48820111941757] [36.12524977838472]
 # # %%
 # from sklearn.ensemble import RandomForestRegressor
 # from sklearn.datasets import make_regression

@@ -18,8 +18,8 @@ from sklearn.metrics import mean_squared_error # squared=False -> root version
 path = '/Users/aubrey/Documents/GitHub/ExplainableAI/ConferenceSubmission/Data/'
 from treeinterpreter import treeinterpreter as ti
 from sklearn.ensemble import RandomForestRegressor
-np.random.seed(0) # keep consistent
-random.seed(0)
+np.random.seed(888) # keep consistent
+random.seed(888)
 from sklearn.utils.random import sample_without_replacement
 # from ..utils import rand_uniform
 # from .utils.random import sample_without_replacement
@@ -201,21 +201,20 @@ def determine_best_split(X, y, potential_splits,typ="regression",k=0):
     record = pd.DataFrame([best_split_column,best_split_value,n_final]).transpose()
     record.columns = ['best_split_column','best_split_value','n_final']
     # breakpoint()
-    # result = record.sample()
-    try:
-        result = record.sample()
-    except:
-        # print(len(y_below), len(y))
-        print(potential_splits)
-        print(record)
-        raise
+    result = record.sample()
+    # try:
+    #     result = record.sample()
+    # except:
+    #     # print(len(y_below), len(y))
+    #     print(potential_splits)
+    #     print(record)
+    #     raise
 
     gain = overall_impurity_for_gain - current_overall_impurity
     rescale_gain = gain*result.n_final/len(y) #might only use rescale_gain
     return int(result.best_split_column), float(result.best_split_value), rescale_gain
 
-def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0):
-    # ,min_samples_leaf=1
+def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0, min_samples_leaf=1):
     
     'first, takes every unique value of every feature in the feature space, then finds the midpoint between each value'
     'modified to add random_subspace for random forest'
@@ -235,27 +234,30 @@ def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0):
     for column_index in column_indices:
         potential_splits[column_index] = [] 
         values = X[:, column_index] 
-        unique_values = np.sort(np.unique(values))  # Get all unique values in each column
+        unique_values = np.unique(values)  # Get all unique values in each column
 
         for index in range(len(unique_values)):  # All unique feature values
             if index != 0:  # Skip first value, we need the difference between next values
                 # Stop early if remaining features are constant
-                current_value = unique_values[index]
-                previous_value = unique_values[index - 1]  # Find a value and the next smallest value
-                potential_split = (current_value + previous_value) / 2  # Find difference between the two as a potential split
+                # current_value = unique_values[index]
+                # previous_value = unique_values[index - 1]  # Find a value and the next smallest value
+                potential_split = (unique_values[index] + unique_values[index - 1]) / 2  # Find difference between the two as a potential split
                 # print(random_state)
                 # potential_split = rand_uniform(previous_value,current_value,random_state)
-                if potential_split == current_value:
-                    potential_split = previous_value
+                # if potential_split == current_value:
+                #     potential_split = previous_value
 
                 # try to split the data
                 _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split)
                 # Reject if min_samples_leaf is not guaranteed
                 # check that both children have samples sizes at least k+1! 
-                if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)): 
+                if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
                     potential_splits[column_index].append(potential_split)
-                else:
-                    potential_splits.remove(column_index)
+                # Reject if min_samples_leaf is not guaranteed
+
+        if potential_splits[column_index] == []:
+            potential_splits = {key:val for key, val in potential_splits.items() if key != column_index}
+                    # potential_splits.remove(column_index)
     # print(column_indices)
     return potential_splits
 
@@ -297,9 +299,9 @@ def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=5, mi
         X = X.values  # Change all to NumPy array for faster calculations
         y = y.values
     # If we have started the tree, X should already be a NumPy array from the code above
-    potential_splits = get_potential_splits(X, y, random_subspace, random_state, k)  # Check for all possible splits ONLY using the random subspace and not all features!    
+    potential_splits = get_potential_splits(X, y, random_subspace, random_state, k, min_samples_leaf)  # Check for all possible splits ONLY using the random subspace and not all features!    
     # Base cases
-    if (check_purity(y)) or (len(y) < min_samples_leaf) or (counter == max_depth) or (X.shape[0]<min_samples_split) or potential_splits=={}:
+    if (check_purity(y)) or (len(y) < 2*min_samples_leaf) or (counter == max_depth) or (len(y)<min_samples_split) or potential_splits=={}:
         classification, feature_name = create_leaf(y, typ)
         return classification, feature_name
 
@@ -311,11 +313,10 @@ def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=5, mi
         # print(best_split_column, best_split_value, gain)
         X_below, X_above, y_below, y_above = split_data(X, y, best_split_column, best_split_value)  # Execute best split
         
-        # check for empty data or too few samples
-        if (min(len(y_below),len(y_above)) < min_samples_leaf):
-            classification, feature_name = create_leaf(y, typ)
-            return classification, feature_name
-
+        # # check for empty data or too few samples
+        # if (min(len(y_below),len(y_above)) < min_samples_leaf):
+        #     classification, feature_name = create_leaf(y, typ)
+        #     return classification, feature_name
         
         # Code to explain decisions made by tree to users
         feature_name = COLUMN_HEADERS[best_split_column]
@@ -396,7 +397,6 @@ def decision_tree_predictions(test_df, tree):
     return predictions
 
 MAX_INT = np.iinfo(np.int32).max
-
 
 
 def _generate_sample_indices(random_state, n_samples, n_samples_bootstrap):
