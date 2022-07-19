@@ -92,27 +92,40 @@ print(mse_from_scratch)
 # # 2.0880381921894298
 # %%
 # # a single regression tree with no feature subsampling and without bootstrap
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # # ------ 0.9376490116119385 s ------
 # # ------ 0.9324202537536621 s ------
 # # ------ 0.007030010223388672 s ------
 # # [25.699467452126065] [25.69946745212606] [25.69946745212606]
-
+# After predicting also via random_forest_prediction
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
+    easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# ------ 1.1720707416534424 s ------
+# ------ 1.177666187286377 s ------
+# ------ 0.0080718994140625 s ------
+# [25.699467452126065] [25.69946745212606] [25.69946745212606] [25.69946745212606] [25.69946745212606] [25.699467452126065]
 # %%
 # # a regression RF with no feature subsampling and without bootstrap
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # ----- 61.65685510635376 s ------
 # ------ 60.82962894439697 s ------
 # ------ 0.07924890518188477 s ------
 # [25.69946745212606] [25.699467452126065] [25.699467452126065]
-
-
+# After predicting also via random_forest_prediction
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
+    easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# ------ 59.18997502326965 s ------
+# ------ 59.026211977005005 s ------
+# ------ 0.09964394569396973 s ------
+# [25.69946745212606] [25.699467452126065] [25.699467452126065] [25.699467452126065] [25.699467452126065] [25.69946745212606]
 # %%
 # # a single regression tree with no feature subsampling and with bootstrap
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # # /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:491: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
 # #   warn(
 # # ------ 0.655552864074707 s ------
@@ -123,19 +136,40 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # #   warn(
 # # ------ 0.008788108825683594 s ------
 # # [375.30341596510385] [375.30341596510385] [375.30341596510385]
-
+# After predicting also via random_forest_prediction
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
+    easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:502: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.7834863662719727 s ------
+# /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:502: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.8239989280700684 s ------
+# /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/ensemble/_forest.py:560: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.009733200073242188 s ------
+# [375.30341596510385] [375.30341596510385] [375.30341596510385] [26.84252163206181] [26.84252163206181] [26.842521632061803]
 # %%
 # # a regression RF with no feature subsampling and with bootstrap
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # # ------ 32.942935943603516 s ------
 # # ------ 33.01469707489014 s ------
 # # ------ 0.1290581226348877 s ------
 # # [23.113725992659568] [23.113725992659568] [23.135379726705654]
+# After predicting also via random_forest_prediction
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
+    easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# ------ 40.94815182685852 s ------
+# ------ 40.878159046173096 s ------
+# ------ 0.12741804122924805 s ------
+# [23.113725992659568] [23.113725992659568] [23.135379726705654] [19.6377631487751] [19.671261945174] [19.637763148775104]
 # %%
 # a single regression tree with feature subsampling and no bootstrap
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # ------ 0.2865259647369385 s ------
 # ------ 0.13503503799438477 s ------
 # ------ 0.005311012268066406 s ------
@@ -148,11 +182,19 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # ------ 0.20720887184143066 s ------
 # ------ 0.005237102508544922 s ------
 # [64.00768654985019] [51.03560902235516] [64.60557235225404]
+# After predicting also via random_forest_prediction
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
+    easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# ------ 0.10810589790344238 s ------
+# ------ 0.2102038860321045 s ------
+# ------ 0.0049550533294677734 s ------
+# [64.00768654985019] [51.03560902235516] [64.60557235225404] [51.03560902235516] [64.60557235225404] [64.00768654985019]
 
 # %%
 # a regression random forest with feature subsampling and no bootstrap
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = False,  dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = False,  dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # ------ 10.55643105506897 s ------
 # ------ 9.791516065597534 s ------
 # ------ 0.05379915237426758 s ------
@@ -165,10 +207,18 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # ------ 10.058604001998901 s ------
 # ------ 0.060658931732177734 s ------
 # [34.99152622195074] [31.856507026337706] [29.99992838637719]
+# After predicting also via random_forest_prediction
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
+    easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = False,  dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# ------ 10.345525979995728 s ------
+# ------ 10.010433197021484 s ------
+# ------ 0.05399799346923828 s ------
+# [34.99152622195074] [31.856507026337706] [29.99992838637719] [31.856507026337706] [29.99992838637719] [34.99152622195074]
 # %%
 # a single regression tree with feature subsampling and bootstrap
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:503: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
 #   warn(
 # ------ 0.09021592140197754 s ------
@@ -189,10 +239,25 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 #   warn(
 # ------ 0.00526118278503418 s ------
 # [390.9139101879343] [377.6485915428245] [377.89161267123524]
+# After predicting also via random_forest_prediction
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
+    easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:502: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.17698407173156738 s ------
+# /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:502: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.124420166015625 s ------
+# /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/ensemble/_forest.py:560: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
+#   warn(
+# ------ 0.0067789554595947266 s ------
+# [390.9139101879343] [377.6485915428245] [377.89161267123524] [35.525150123602394] [39.18937366595164] [65.58817754717896]
+
 # %%
 # a regression random forest with feature subsampling and bootstrap
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # ------ 6.87406587600708 s ------
 # ------ 7.471606016159058 s ------
 # ------ 0.1135549545288086 s ------
@@ -201,10 +266,24 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred)
 # ------ 7.336228132247925 s ------
 # ------ 0.08517980575561523 s ------
 # [39.486221920196286] [38.48820111941757] [36.12524977838472]
+# After predicting also via random_forest_prediction
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
+    easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# ------ 6.551292896270752 s ------
+# ------ 7.240666151046753 s ------
+# ------ 0.08686065673828125 s ------
+# [39.486221920196286] [38.48820111941757] [36.12524977838472] [34.448542689702705] [32.528321902850045] [35.1108060075375]
+
+
+
+
 # # %%
 # from sklearn.ensemble import RandomForestRegressor
 # from sklearn.datasets import make_regression
 # from sklearn.tree import DecisionTreeRegressor
+
+
 
 # X, y = make_regression(n_features=4, n_informative=2,
 #                         random_state=0, shuffle=False)

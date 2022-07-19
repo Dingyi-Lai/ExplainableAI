@@ -541,7 +541,7 @@ def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_sampl
     # , mse_inbag, mse_oob = random_forest_algorithm(X, y,
     #                                                 n_trees=n_trees, n_features=n_features,
     #                                                 dt_max_depth=dt_max_depth,typ=typ,k=k)
-    _, feature_gain, mse_oob_pred = random_forest_algorithm_oob(X, y,n_trees=n_trees, n_features=n_features,
+    forest, feature_gain, mse_oob_pred = random_forest_algorithm_oob(X, y,n_trees=n_trees, n_features=n_features,
                                                     dt_max_depth=dt_max_depth,typ=typ,k=k, random_state=random_state,
                                                      oob_score=oob_score, min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf)
 #     # store the feature_importance
@@ -553,13 +553,13 @@ def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_sampl
 #                 breakpoint()
 #                 feature_gain_result.loc[i,"value"] = j[2][0]
     
-# #     # predict y
-# #     y_predict_from_scratch = random_forest_predictions(X_test, forest)
-# #     y_predict_sklearn = rf.predict(X_test)
+    # predict y
+    y_predict_from_scratch = random_forest_predictions(X, forest)
+    # y_predict_sklearn = rf.predict(X)
 
-# #     # mean_squared_error
-# #     mse_from_scratch = mean_squared_error(y_test,y_predict_from_scratch)
-# #     mse_sklearn = mean_squared_error(y_test,y_predict_sklearn)
+    # mean_squared_error
+    mse_rf_prediction = mean_squared_error(y,y_predict_from_scratch)
+    # mse_sklearn = mean_squared_error(y_test,y_predict_sklearn)
 
 #     # sum the feature importance of included features
 #     fi_simulation = feature_gain_result.groupby(['tree_num','feature']).sum()
@@ -568,7 +568,7 @@ def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_sampl
 
     print('------',time.time()-start,'s ------')
     # fi_simulation_s,
-    return mse_oob_pred
+    return mse_oob_pred, mse_rf_prediction
 # , mse_sklearn, fi_sklearn
 
 
@@ -586,12 +586,13 @@ def generate_mse_sklearn(X,y, random_state=888, n_estimators = 1, oob_score = Tr
     rf = RandomForestRegressor(random_state=random_state, max_depth = dt_max_depth, max_features = n_features, min_samples_split=min_samples_split,
         min_samples_leaf=min_samples_leaf, n_estimators = n_estimators, bootstrap=oob_score, oob_score = oob_score)
     rf.fit(X, y)
+    mse_rf_prediction_sklearn = mean_squared_error(y, rf.predict(X))
     if oob_score:
         mse_sklearn = mean_squared_error(y, rf.oob_prediction_)
     else:
-        mse_sklearn = mean_squared_error(y, rf.predict(X))
+        mse_sklearn = mse_rf_prediction_sklearn
     print('------',time.time()-start,'s ------')
-    return mse_sklearn
+    return mse_sklearn, mse_rf_prediction_sklearn
 
 ##### wrap the following 
 def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_score = True, dt_max_depth=2):
@@ -618,33 +619,36 @@ def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_s
 
     # fi_k0_simulation_s = {}
     mse_k0_oob_pred = []
-
+    mse_k0_pred = []
     # mse_k1_from_scratch_inbag = []
     # mse_k1_from_scratch_oob = []
 
     # fi_k1_simulation_s = {}
     mse_k1_oob_pred = []
+    mse_k1_pred = []
 
     mse_k0_sklearn_oob = []
+    mse_k0_sklearn = []
 
     # fi_k0_simulation_s['df_{}'.format(name)],
-    mse_oob_pred = generate_mse_fi(X,y, k=0, n_trees=n_trees,\
+    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, k=0, n_trees=n_trees,\
         random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
     # mse_k0_from_scratch_inbag.append(mse_inbag)
     # mse_k0_from_scratch_oob.append(mse_oob)
     mse_k0_oob_pred.append(mse_oob_pred)
-
+    mse_k0_pred.append(mse_rf_prediction)
     # fi_k1_simulation_s['df_{}'.format(name)],
-    mse_oob_pred = generate_mse_fi(X,y, k=1, n_trees=n_trees,\
+    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, k=1, n_trees=n_trees,\
         random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
     # mse_k1_from_scratch_inbag.append(mse_inbag)
     # mse_k1_from_scratch_oob.append(mse_oob)
     mse_k1_oob_pred.append(mse_oob_pred)
-
+    mse_k1_pred.append(mse_rf_prediction)
     # sklearn
-    mse_oob = generate_mse_sklearn(X,y, n_estimators=n_trees, random_state=random_state,\
+    mse_oob, mse_rf_prediction_sklearn = generate_mse_sklearn(X,y, n_estimators=n_trees, random_state=random_state,\
          n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
     mse_k0_sklearn_oob.append(mse_oob)
-
-    return mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred
+    mse_k0_sklearn.append(mse_rf_prediction_sklearn)
+    return mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_pred,mse_k1_pred,mse_k0_sklearn
     
+
