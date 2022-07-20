@@ -629,7 +629,7 @@ def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_s
 
     mse_k0_sklearn_oob = []
     mse_k0_sklearn = []
-
+    print(name)
     # fi_k0_simulation_s['df_{}'.format(name)],
     mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, k=0, n_trees=n_trees,\
         random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
@@ -649,6 +649,6 @@ def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_s
          n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
     mse_k0_sklearn_oob.append(mse_oob)
     mse_k0_sklearn.append(mse_rf_prediction_sklearn)
-    return mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_pred,mse_k1_pred,mse_k0_sklearn
+    return mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred
     
 
