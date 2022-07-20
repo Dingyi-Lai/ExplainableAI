@@ -50,6 +50,7 @@ import numpy as np
 import pandas as pd 
 from sklearn.metrics import mean_squared_error
 path = '/Users/aubrey/Documents/GitHub/ExplainableAI/ConferenceSubmission/Data/'
+path_save = '/Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/Data/'
 # %load_ext autoreload
 # %autoreload 2
 
@@ -58,37 +59,37 @@ path = '/Users/aubrey/Documents/GitHub/ExplainableAI/ConferenceSubmission/Data/'
 
 # Create a random dataset
 # Read original Data
-data = pyreadr.read_r(path+'SRData.RData')
-random.seed(0)
+# data = pyreadr.read_r(path+'SRData.RData')
+# random.seed(0)
 
-X0 = data['boston']
-X1 = X0.select_dtypes(include=np.number).iloc[:,:-1] # numerical features exclude the last column (y)
-if len(X0.select_dtypes(include='category').columns) !=0: # recognize categorical feature
-    X2 = pd.get_dummies(X0[(X0.select_dtypes(include='category')).columns], drop_first=True) # change it into one_hot_encoding
-else: X2 = pd.DataFrame()
+# X0 = data['boston']
+# X1 = X0.select_dtypes(include=np.number).iloc[:,:-1] # numerical features exclude the last column (y)
+# if len(X0.select_dtypes(include='category').columns) !=0: # recognize categorical feature
+#     X2 = pd.get_dummies(X0[(X0.select_dtypes(include='category')).columns], drop_first=True) # change it into one_hot_encoding
+# else: X2 = pd.DataFrame()
 
-X = pd.concat(objs=[X2, X1], axis=1) # combine dummies and numerical features
-y = data['boston'].iloc[:,-1] # the last column is y
+# X = pd.concat(objs=[X2, X1], axis=1) # combine dummies and numerical features
+# y = data['boston'].iloc[:,-1] # the last column is y
 
-# from sklearn import datasets
-# X,y = datasets.load_boston(return_X_y=True)
+# # from sklearn import datasets
+# # X,y = datasets.load_boston(return_X_y=True)
 
-# Fit regression model
-regr_1 = DecisionTreeRegressor(max_depth=8)
-#regr_2 = DecisionTreeRegressor(max_depth=5)
-regr_1.fit(X, y)
-#regr_2.fit(X, y)
-# Predict
-mse_sklearn = mean_squared_error(y, regr_1.predict(X))
-print(mse_sklearn)
+# # Fit regression model
+# regr_1 = DecisionTreeRegressor(max_depth=8)
+# #regr_2 = DecisionTreeRegressor(max_depth=5)
+# regr_1.fit(X, y)
+# #regr_2.fit(X, y)
+# # Predict
+# mse_sklearn = mean_squared_error(y, regr_1.predict(X))
+# print(mse_sklearn)
 # # 2.08803819218943
 # %%
 # X = pd.DataFrame(X)
 # y = pd.DataFrame(y)
-sub_tree, feature_gain = decision_tree_algorithm(X, y, max_depth=8)
-y_2 = decision_tree_predictions(X, sub_tree)
-mse_from_scratch = mean_squared_error(y, y_2)
-print(mse_from_scratch)
+# sub_tree, feature_gain = decision_tree_algorithm(X, y, max_depth=8)
+# y_2 = decision_tree_predictions(X, sub_tree)
+# mse_from_scratch = mean_squared_error(y, y_2)
+# print(mse_from_scratch)
 # # 2.0880381921894298
 # %%
 # # a single regression tree with no feature subsampling and without bootstrap
@@ -99,13 +100,13 @@ print(mse_from_scratch)
 # # ------ 0.007030010223388672 s ------
 # # [25.699467452126065] [25.69946745212606] [25.69946745212606]
 # After predicting also via random_forest_prediction
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
-    easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
+#     easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
 # ------ 1.1720707416534424 s ------
 # ------ 1.177666187286377 s ------
 # ------ 0.0080718994140625 s ------
-# [25.699467452126065] [25.69946745212606] [25.69946745212606] [25.69946745212606] [25.69946745212606] [25.699467452126065]
+# [25.699467452126065] [25.69946745212606] [25.69946745212606] [25.699467452126065] [25.69946745212606] [25.69946745212606]
 # %%
 # # a regression RF with no feature subsampling and without bootstrap
 # mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
@@ -115,13 +116,13 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pre
 # ------ 0.07924890518188477 s ------
 # [25.69946745212606] [25.699467452126065] [25.699467452126065]
 # After predicting also via random_forest_prediction
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
-    easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
+#     easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
 # ------ 59.18997502326965 s ------
 # ------ 59.026211977005005 s ------
 # ------ 0.09964394569396973 s ------
-# [25.69946745212606] [25.699467452126065] [25.699467452126065] [25.699467452126065] [25.699467452126065] [25.69946745212606]
+# [25.69946745212606] [25.699467452126065] [25.699467452126065] [25.69946745212606] [25.699467452126065] [25.699467452126065]
 # %%
 # # a single regression tree with no feature subsampling and with bootstrap
 # mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
@@ -137,9 +138,9 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pre
 # # ------ 0.008788108825683594 s ------
 # # [375.30341596510385] [375.30341596510385] [375.30341596510385]
 # After predicting also via random_forest_prediction
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
-    easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
+#     easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
 # /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:502: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
 #   warn(
 # ------ 0.7834863662719727 s ------
@@ -149,7 +150,7 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pre
 # /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/ensemble/_forest.py:560: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
 #   warn(
 # ------ 0.009733200073242188 s ------
-# [375.30341596510385] [375.30341596510385] [375.30341596510385] [26.84252163206181] [26.84252163206181] [26.842521632061803]
+# [375.30341596510385] [375.30341596510385] [375.30341596510385] [26.842521632061803] [26.84252163206181] [26.84252163206181]
 # %%
 # # a regression RF with no feature subsampling and with bootstrap
 # mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
@@ -159,13 +160,13 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pre
 # # ------ 0.1290581226348877 s ------
 # # [23.113725992659568] [23.113725992659568] [23.135379726705654]
 # After predicting also via random_forest_prediction
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
-    easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
+#     easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
 # ------ 40.94815182685852 s ------
 # ------ 40.878159046173096 s ------
 # ------ 0.12741804122924805 s ------
-# [23.113725992659568] [23.113725992659568] [23.135379726705654] [19.6377631487751] [19.671261945174] [19.637763148775104]
+# [23.113725992659568] [23.113725992659568] [23.135379726705654] [19.637763148775104] [19.6377631487751] [19.671261945174]
 # %%
 # a single regression tree with feature subsampling and no bootstrap
 # mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=2)
@@ -183,13 +184,13 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pre
 # ------ 0.005237102508544922 s ------
 # [64.00768654985019] [51.03560902235516] [64.60557235225404]
 # After predicting also via random_forest_prediction
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
-    easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
+#     easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
 # ------ 0.10810589790344238 s ------
 # ------ 0.2102038860321045 s ------
 # ------ 0.0049550533294677734 s ------
-# [64.00768654985019] [51.03560902235516] [64.60557235225404] [51.03560902235516] [64.60557235225404] [64.00768654985019]
+# [64.00768654985019] [51.03560902235516] [64.60557235225404] [64.00768654985019] [51.03560902235516] [64.60557235225404]
 
 # %%
 # a regression random forest with feature subsampling and no bootstrap
@@ -208,13 +209,13 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pre
 # ------ 0.060658931732177734 s ------
 # [34.99152622195074] [31.856507026337706] [29.99992838637719]
 # After predicting also via random_forest_prediction
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
-    easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = False,  dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
+#     easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = False,  dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
 # ------ 10.345525979995728 s ------
 # ------ 10.010433197021484 s ------
 # ------ 0.05399799346923828 s ------
-# [34.99152622195074] [31.856507026337706] [29.99992838637719] [31.856507026337706] [29.99992838637719] [34.99152622195074]
+# [34.99152622195074] [31.856507026337706] [29.99992838637719] [34.99152622195074] [31.856507026337706] [29.99992838637719]
 # %%
 # a single regression tree with feature subsampling and bootstrap
 # mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred = easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
@@ -240,9 +241,9 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pre
 # ------ 0.00526118278503418 s ------
 # [390.9139101879343] [377.6485915428245] [377.89161267123524]
 # After predicting also via random_forest_prediction
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
-    easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
+#     easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
 # /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:502: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
 #   warn(
 # ------ 0.17698407173156738 s ------
@@ -252,7 +253,7 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pre
 # /Library/Frameworks/Python.framework/Versions/3.9/lib/python3.9/site-packages/sklearn/ensemble/_forest.py:560: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
 #   warn(
 # ------ 0.0067789554595947266 s ------
-# [390.9139101879343] [377.6485915428245] [377.89161267123524] [35.525150123602394] [39.18937366595164] [65.58817754717896]
+# [390.9139101879343] [377.6485915428245] [377.89161267123524] [65.58817754717896] [35.525150123602394] [39.18937366595164]
 
 # %%
 # a regression random forest with feature subsampling and bootstrap
@@ -267,91 +268,123 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pre
 # ------ 0.08517980575561523 s ------
 # [39.486221920196286] [38.48820111941757] [36.12524977838472]
 # After predicting also via random_forest_prediction
-mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn = \
-    easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
-print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pred,mse_k0_sklearn)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
+#     easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
 # ------ 6.551292896270752 s ------
 # ------ 7.240666151046753 s ------
 # ------ 0.08686065673828125 s ------
-# [39.486221920196286] [38.48820111941757] [36.12524977838472] [34.448542689702705] [32.528321902850045] [35.1108060075375]
+# [39.486221920196286] [38.48820111941757] [36.12524977838472] [35.1108060075375] [34.448542689702705] [32.528321902850045]
 
 
+# %%
 
+# Read original Data
+data = pyreadr.read_r(path+'SRData.RData')
+# path2 = path + 'mse&fi/'
 
-# # %%
-# from sklearn.ensemble import RandomForestRegressor
-# from sklearn.datasets import make_regression
-# from sklearn.tree import DecisionTreeRegressor
-
-
-
-# X, y = make_regression(n_features=4, n_informative=2,
-#                         random_state=0, shuffle=False)
-# rf = RandomForestRegressor(max_depth=10, random_state=0, bootstrap=False, min_samples_split=2, min_samples_leaf=1, n_estimators=1)
-# rf.fit(X, y)
-# mean_squared_error(y, rf.predict(X))
-
-
-# # %%
-# SingleTree= DecisionTreeRegressor(max_depth=10, random_state=0, min_samples_split=2, min_samples_leaf=1)
-# SingleTree.fit(X, y)
-# mean_squared_error(y, SingleTree.predict(X))
-
-# # %%
-
-# # Read original Data
-# data = pyreadr.read_r(path+'SRData.RData')
-# # path2 = path + 'mse&fi/'
-
-# # dataname = ['abalone', 'bike', 'boston', 'concrete', 'cpu', 'csm', 'fb', 'parkinsons','servo', 'solar','synthetic1','synthetic2'] # real data
+dataname = ['abalone', 'bike', 'boston', 'concrete', 'cpu', 'csm', 'fb', 'parkinsons','servo', 'solar','synthetic1','synthetic2'] # real data
 # dataname = ['bike'] # real data
-# # dataname = ['cpu'] # real data
-# ######## use some of them
+# dataname = ['cpu'] # real data
+######## use some of them
 
-# # Iterate to store ti and shap
+# Iterate to store ti and shap
 # k0_sklearn_oob_bike = []
 # k0_oob_pred_bike = []
 # k1_oob_pred_bike = []
+mse_k0_sklearn_oob_final = []
+mse_k0_oob_pred_final = []
+mse_k1_oob_pred_final = []
+mse_k0_sklearn_final = []
+mse_k0_pred_final = []
+mse_k1_pred_final = []
 
-
-# for index, name in enumerate(dataname):
+for index, name in enumerate(dataname):
     
-#     temp1,temp2,temp3 = easy_for_test(name=name)
-#     k0_sklearn_oob_bike.append(temp1)
-#     k0_oob_pred_bike.append(temp2)
-#     k1_oob_pred_bike.append(temp3)
+    temp1,temp2,temp3,temp4,temp5,temp6 = easy_for_test(name=name,n_trees=200, random_state=888,\
+        n_features=2, oob_score = True, dt_max_depth=2)
+    mse_k0_sklearn_oob_final.append(temp1)
+    mse_k0_oob_pred_final.append(temp2)
+    mse_k1_oob_pred_final.append(temp3)
+    mse_k0_sklearn_final.append(temp4)
+    mse_k0_pred_final.append(temp5)
+    mse_k1_pred_final.append(temp6)
     
 
-# # %%
-# k0_sklearn_oob_bike
+# %%
+k_group = (['sklearn','k=0','k=1'])*2
+oob_all = (['oob'])*3+(['all'])*3
+mse_summary = pd.DataFrame([mse_k0_sklearn_oob_final,mse_k0_oob_pred_final,mse_k1_oob_pred_final,mse_k0_sklearn_final,mse_k0_pred_final,mse_k1_pred_final])
+mse_summary.columns = dataname
+mse_tags = pd.DataFrame([k_group,oob_all]).T
+mse_tags.columns = {'k_group','oob_all'}
+mse_summary = pd.concat([mse_summary,mse_tags], axis=1)
+print(mse_summary)
 
-# # %%
-# print(k0_oob_pred_bike, k1_oob_pred_bike)
+# %% [markdown]
+# k=1 increases mse: concrete, (cpu), csm, fb, parkinsons, synthetic1 (multiplicative term)
 
-# # %%
+# %%
+# store the results, don't need to run it again
+mse_summary.to_csv(path_save+'mse_summary1.csv')
+mse_summary.to_csv(Path.cwd().joinpath("RF_from_scratch/Data/mse_summary2.csv"))
+# print(mse_summary)
+# Store tree in a pickle
+# with open(Path.cwd().joinpath('mse_k0_from_scratch_train.pickle'), 'wb') as f:
+#     # Pickle the 'data' dictionary using the highest protocol available.
+#     pickle.dump(mse_k0_from_scratch_train, f, pickle.HIGHEST_PROTOCOL)
 
-# # Read original Data
-# data = pyreadr.read_r(path+'SRData.RData')
-# # path2 = path + 'mse&fi/'
-
-# # dataname = ['abalone', 'bike', 'boston', 'concrete', 'cpu', 'csm', 'fb', 'parkinsons','servo', 'solar','synthetic1','synthetic2'] # real data
-# dataname = ['bike'] # real data
-# # dataname = ['cpu'] # real data
-# ######## use some of them
-
-# # Iterate to store ti and shap
-# k0_sklearn_oob = []
-# k0_oob_pred = []
-# k1_oob_pred = []
-
-
-# for index, name in enumerate(dataname):
+# with open(Path.cwd().joinpath('mse_k1_from_scratch_train.pickle'), 'wb') as f:
+#     # Pickle the 'data' dictionary using the highest protocol available.
+#     pickle.dump(mse_k1_from_scratch_train, f, pickle.HIGHEST_PROTOCOL)
     
-#     temp1,temp2,temp3 = easy_for_test(name=name)
-#     k0_sklearn_oob.append(temp1)
-#     k0_oob_pred.append(temp2)
-#     k1_oob_pred.append(temp3)
+# with open(Path.cwd().joinpath('mse_k0_from_scratch_test.pickle'), 'wb') as f:
+#     # Pickle the 'data' dictionary using the highest protocol available.
+#     pickle.dump(mse_k0_from_scratch_test, f, pickle.HIGHEST_PROTOCOL)
+
+# with open(Path.cwd().joinpath('mse_k1_from_scratch_test.pickle'), 'wb') as f:
+#     # Pickle the 'data' dictionary using the highest protocol available.
+#     pickle.dump(mse_k1_from_scratch_test, f, pickle.HIGHEST_PROTOCOL)
+
+# with open(Path.cwd().joinpath('fi_k0_simulation_s.pickle'), 'wb') as f:
+#     # Pickle the 'data' dictionary using the highest protocol available.
+#     pickle.dump(fi_k0_simulation_s, f, pickle.HIGHEST_PROTOCOL)
+
+# with open(Path.cwd().joinpath('fi_k1_simulation_s.pickle'), 'wb') as f:
+#     # Pickle the 'data' dictionary using the highest protocol available.
+#     pickle.dump(fi_k1_simulation_s, f, pickle.HIGHEST_PROTOCOL)
+
+
+# %%
+# recall the data
+# mse_summary = pd.read_csv(Path.cwd().joinpath("mse_summary.csv")).iloc[:,1:]
+
+# with open(Path.cwd().joinpath('mse_k0_from_scratch_train.pickle'), 'rb') as f:
+#     mse_k0_from_scratch_train = pickle.load(f)
     
+# with open(Path.cwd().joinpath('mse_k1_from_scratch_train.pickle'), 'rb') as f:
+#     mse_k1_from_scratch_train = pickle.load(f)
+
+# with open(Path.cwd().joinpath('mse_k0_from_scratch_test.pickle'), 'rb') as f:
+#     mse_k0_from_scratch_test = pickle.load(f)
+    
+# with open(Path.cwd().joinpath('mse_k1_from_scratch_test.pickle'), 'rb') as f:
+#     mse_k1_from_scratch_test = pickle.load(f)
+    
+# with open(Path.cwd().joinpath('fi_k0_simulation_s.pickle'), 'rb') as f:
+#     fi_k0_simulation_s = pickle.load(f)
+    
+# with open(Path.cwd().joinpath('fi_k1_simulation_s.pickle'), 'rb') as f:
+#     fi_k1_simulation_s = pickle.load(f)
+
+# %%
+# check the result
+# mse_summary
+
+# %%
+# fi_k0_simulation_s
+
+
 
 # # %%
 # k0_sklearn_oob
@@ -424,77 +457,6 @@ print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred, mse_k0_pred,mse_k1_pre
 # #     mse_k0_test_mean.append(np.mean(mse_k0_from_scratch_test[v]))
 # #     mse_k1_test_mean.append(np.mean(mse_k1_from_scratch_test[v]))
 
-# # %%
-# k_group = [0]*2 + [1]*2
-# inbag_oob = (['inbag','oob'])*2
-# mse_summary = pd.DataFrame([mse_k0_from_scratch_train,mse_k0_from_scratch_test,mse_k1_from_scratch_train,mse_k1_from_scratch_test])
-# mse_summary.columns = dataname
-# mse_tags = pd.DataFrame([k_group,inbag_oob]).T
-# mse_tags.columns = {'k_group','inbag_oob'}
-# mse_summary = pd.concat([mse_summary,mse_tags], axis=1)
-# mse_summary
-
-# # %% [markdown]
-# # k=1 increases mse: concrete, (cpu), csm, fb, parkinsons, synthetic1 (multiplicative term)
-
-# # %%
-# # store the results, don't need to run it again
-# mse_summary.to_csv(Path.cwd().joinpath("mse_summary.csv"))
-
-# # Store tree in a pickle
-# # with open(Path.cwd().joinpath('mse_k0_from_scratch_train.pickle'), 'wb') as f:
-# #     # Pickle the 'data' dictionary using the highest protocol available.
-# #     pickle.dump(mse_k0_from_scratch_train, f, pickle.HIGHEST_PROTOCOL)
-
-# # with open(Path.cwd().joinpath('mse_k1_from_scratch_train.pickle'), 'wb') as f:
-# #     # Pickle the 'data' dictionary using the highest protocol available.
-# #     pickle.dump(mse_k1_from_scratch_train, f, pickle.HIGHEST_PROTOCOL)
-    
-# # with open(Path.cwd().joinpath('mse_k0_from_scratch_test.pickle'), 'wb') as f:
-# #     # Pickle the 'data' dictionary using the highest protocol available.
-# #     pickle.dump(mse_k0_from_scratch_test, f, pickle.HIGHEST_PROTOCOL)
-
-# # with open(Path.cwd().joinpath('mse_k1_from_scratch_test.pickle'), 'wb') as f:
-# #     # Pickle the 'data' dictionary using the highest protocol available.
-# #     pickle.dump(mse_k1_from_scratch_test, f, pickle.HIGHEST_PROTOCOL)
-
-# with open(Path.cwd().joinpath('fi_k0_simulation_s.pickle'), 'wb') as f:
-#     # Pickle the 'data' dictionary using the highest protocol available.
-#     pickle.dump(fi_k0_simulation_s, f, pickle.HIGHEST_PROTOCOL)
-
-# with open(Path.cwd().joinpath('fi_k1_simulation_s.pickle'), 'wb') as f:
-#     # Pickle the 'data' dictionary using the highest protocol available.
-#     pickle.dump(fi_k1_simulation_s, f, pickle.HIGHEST_PROTOCOL)
-
-
-# # %%
-# # recall the data
-# mse_summary = pd.read_csv(Path.cwd().joinpath("mse_summary.csv")).iloc[:,1:]
-
-# # with open(Path.cwd().joinpath('mse_k0_from_scratch_train.pickle'), 'rb') as f:
-# #     mse_k0_from_scratch_train = pickle.load(f)
-    
-# # with open(Path.cwd().joinpath('mse_k1_from_scratch_train.pickle'), 'rb') as f:
-# #     mse_k1_from_scratch_train = pickle.load(f)
-
-# # with open(Path.cwd().joinpath('mse_k0_from_scratch_test.pickle'), 'rb') as f:
-# #     mse_k0_from_scratch_test = pickle.load(f)
-    
-# # with open(Path.cwd().joinpath('mse_k1_from_scratch_test.pickle'), 'rb') as f:
-# #     mse_k1_from_scratch_test = pickle.load(f)
-    
-# with open(Path.cwd().joinpath('fi_k0_simulation_s.pickle'), 'rb') as f:
-#     fi_k0_simulation_s = pickle.load(f)
-    
-# with open(Path.cwd().joinpath('fi_k1_simulation_s.pickle'), 'rb') as f:
-#     fi_k1_simulation_s = pickle.load(f)
-
-# # %%
-# # check the result
-# mse_summary
-
-# # %%
-# fi_k0_simulation_s
 
 # # %%
 
