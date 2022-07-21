@@ -239,51 +239,58 @@ def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0, m
         #vectorized midpoints
         n = len(unique_values)
         potential_split_candidates  = (unique_values[0:(n-1)] + unique_values[1:n])/2
-
-        #no need to check the full array with split_data, it should be just the boundaries that are potential trouble:
-        j_left=0
-        _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_left])
-        # Reject if min_samples_leaf is not guaranteed
-        # check that both children have samples sizes at least k+1! 
-        while ((len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or\
-             (len(y_above) < min_samples_leaf)) and len(potential_split_candidates)>(j_left+1): 
-            j_left+=1
+        if len(potential_split_candidates)>0:
+            #no need to check the full array with split_data, it should be just the boundaries that are potential trouble:
             # breakpoint()
-            _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_left])    
-        
-        j_right=n-2
-        # breakpoint()
-        _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_right])
-        # Reject if min_samples_leaf is not guaranteed
-        # check that both children have samples sizes at least k+1! 
-        while ((len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or\
-             (len(y_above) < min_samples_leaf)) and j_right>j_left: 
-            j_right-=1
-            _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_right]) 
+            j_left=0
+            # try:
+            _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_left])
+            # except:
+            #     # print(len(y_below), len(y))
+            #     print(len(potential_split_candidates))
+            #     print(j_left)
+            #     raise
+            # Reject if min_samples_leaf is not guaranteed
+            # check that both children have samples sizes at least k+1! 
+            while ((len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or\
+                (len(y_above) < min_samples_leaf)) and len(potential_split_candidates)>(j_left+1): 
+                j_left+=1
+                # breakpoint()
+                _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_left])    
+            
+            j_right=n-2
+            # breakpoint()
+            _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_right])
+            # Reject if min_samples_leaf is not guaranteed
+            # check that both children have samples sizes at least k+1! 
+            while ((len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or\
+                (len(y_above) < min_samples_leaf)) and j_right>j_left: 
+                j_right-=1
+                _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_right]) 
 
-        potential_splits[column_index] = potential_split_candidates[j_left:j_right]
+            potential_splits[column_index] = potential_split_candidates[j_left:j_right]
 
 
-        # for index in range(len(unique_values)):  # All unique feature values
-        #     if index != 0:  # Skip first value, we need the difference between next values
-        #         # Stop early if remaining features are constant
-        #         # current_value = unique_values[index]
-        #         # previous_value = unique_values[index - 1]  # Find a value and the next smallest value
-        #         potential_split = (unique_values[index] + unique_values[index - 1]) / 2  # Find difference between the two as a potential split
-        #         # print(random_state)
-        #         # potential_split = rand_uniform(previous_value,current_value,random_state)
-        #         # if potential_split == current_value:
-        #         #     potential_split = previous_value
+            # for index in range(len(unique_values)):  # All unique feature values
+            #     if index != 0:  # Skip first value, we need the difference between next values
+            #         # Stop early if remaining features are constant
+            #         # current_value = unique_values[index]
+            #         # previous_value = unique_values[index - 1]  # Find a value and the next smallest value
+            #         potential_split = (unique_values[index] + unique_values[index - 1]) / 2  # Find difference between the two as a potential split
+            #         # print(random_state)
+            #         # potential_split = rand_uniform(previous_value,current_value,random_state)
+            #         # if potential_split == current_value:
+            #         #     potential_split = previous_value
 
-        #         # try to split the data
-        #         _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split)
-        #         # Reject if min_samples_leaf is not guaranteed
-        #         # check that both children have samples sizes at least k+1! 
-        #         if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
-        #             potential_splits[column_index].append(potential_split)
-        #         # Reject if min_samples_leaf is not guaranteed
+            #         # try to split the data
+            #         _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split)
+            #         # Reject if min_samples_leaf is not guaranteed
+            #         # check that both children have samples sizes at least k+1! 
+            #         if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
+            #             potential_splits[column_index].append(potential_split)
+            #         # Reject if min_samples_leaf is not guaranteed
 
-        if potential_splits[column_index] == []:
+        if len(potential_splits[column_index]) == 0:
             potential_splits = {key:val for key, val in potential_splits.items() if key != column_index}
                     # potential_splits.remove(column_index)
     # print(column_indices)
