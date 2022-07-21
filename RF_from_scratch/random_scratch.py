@@ -1,42 +1,3 @@
-# %% [markdown]
-# <h1>Table of Contents<span class="tocSkip"></span></h1>
-# <div class="toc"><ul class="toc-item"><li><span><a href="#Chapter-8---Ensemble-learning" data-toc-modified-id="Chapter-8---Ensemble-learning-1"><span class="toc-item-num">1&nbsp;&nbsp;</span>Chapter 8 - Ensemble learning</a></span></li><li><span><a href="#Preliminaries" data-toc-modified-id="Preliminaries-2"><span class="toc-item-num">2&nbsp;&nbsp;</span>Preliminaries</a></span></li><li><span><a href="#Random-forest" data-toc-modified-id="Random-forest-3"><span class="toc-item-num">3&nbsp;&nbsp;</span>Random forest</a></span><ul class="toc-item"><li><span><a href="#Random-forest-from-scratch" data-toc-modified-id="Random-forest-from-scratch-3.1"><span class="toc-item-num">3.1&nbsp;&nbsp;</span>Random forest from scratch</a></span><ul class="toc-item"><li><span><a href="#Helper-Functions-for-Individual-Trees" data-toc-modified-id="Helper-Functions-for-Individual-Trees-3.1.1"><span class="toc-item-num">3.1.1&nbsp;&nbsp;</span>Helper Functions for Individual Trees</a></span><ul class="toc-item"><li><span><a href="#Random-subspace" data-toc-modified-id="Random-subspace-3.1.1.1"><span class="toc-item-num">3.1.1.1&nbsp;&nbsp;</span>Random subspace</a></span></li></ul></li><li><span><a href="#Helper-functions-for-the-Random-Forest-Algorithm" data-toc-modified-id="Helper-functions-for-the-Random-Forest-Algorithm-3.1.2"><span class="toc-item-num">3.1.2&nbsp;&nbsp;</span>Helper functions for the Random Forest Algorithm</a></span></li><li><span><a href="#Ready,-steady,-go..." data-toc-modified-id="Ready,-steady,-go...-3.1.3"><span class="toc-item-num">3.1.3&nbsp;&nbsp;</span>Ready, steady, go...</a></span></li></ul></li><li><span><a href="#Random-forest-in-sklearn" data-toc-modified-id="Random-forest-in-sklearn-3.2"><span class="toc-item-num">3.2&nbsp;&nbsp;</span>Random forest in sklearn</a></span><ul class="toc-item"><li><ul class="toc-item"><li><span><a href="#Tuning-RF-hyperparameters-using-grid-search" data-toc-modified-id="Tuning-RF-hyperparameters-using-grid-search-3.2.0.1"><span class="toc-item-num">3.2.0.1&nbsp;&nbsp;</span>Tuning RF hyperparameters using grid search</a></span></li></ul></li></ul></li></ul></li><li><span><a href="#Boosting" data-toc-modified-id="Boosting-4"><span class="toc-item-num">4&nbsp;&nbsp;</span>Boosting</a></span><ul class="toc-item"><li><span><a href="#Verifying-the-boosting-principle" data-toc-modified-id="Verifying-the-boosting-principle-4.1"><span class="toc-item-num">4.1&nbsp;&nbsp;</span>Verifying the boosting principle</a></span><ul class="toc-item"><li><span><a href="#Model-training" data-toc-modified-id="Model-training-4.1.1"><span class="toc-item-num">4.1.1&nbsp;&nbsp;</span>Model training</a></span></li><li><span><a href="#Model-testing" data-toc-modified-id="Model-testing-4.1.2"><span class="toc-item-num">4.1.2&nbsp;&nbsp;</span>Model testing</a></span></li></ul></li><li><span><a href="#Gradient-Boosting-from-scratch" data-toc-modified-id="Gradient-Boosting-from-scratch-4.2"><span class="toc-item-num">4.2&nbsp;&nbsp;</span>Gradient Boosting from scratch</a></span></li><li><span><a href="#XGBoost-with-xgb-library" data-toc-modified-id="XGBoost-with-xgb-library-4.3"><span class="toc-item-num">4.3&nbsp;&nbsp;</span>XGBoost with xgb library</a></span><ul class="toc-item"><li><span><a href="#Tuning-XGB-hyperparameters" data-toc-modified-id="Tuning-XGB-hyperparameters-4.3.1"><span class="toc-item-num">4.3.1&nbsp;&nbsp;</span>Tuning XGB hyperparameters</a></span></li></ul></li></ul></li><li><span><a href="#Conclusions" data-toc-modified-id="Conclusions-5"><span class="toc-item-num">5&nbsp;&nbsp;</span>Conclusions</a></span></li></ul></div>
-
-# %% [markdown]
-# [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Humboldt-WI/bads/blob/master/tutorials/8_nb_ensemble_learning.ipynb) 
-# 
-
-# %% [markdown]
-# # Chapter 8 - Ensemble learning 
-# We covered classification and regression trees in [Tutorial 5 on supervised learning algorithms](https://github.com/Humboldt-WI/bads/blob/master/tutorials/5_nb_supervised_learning.ipynb). Today, we will look into ways for improving the predictive power of tree-based classifiers through *ensemble learning*. Recall that an ensemble is a **collection of multiple base models**. The base models are prediction models. In a homogeneous ensemble, we produce the base models with the same supervised learning algorithm. Heterogeneous ensembles combine base models that come from different learning algorithm. We focus on homogeneous ensembles in this tutorial and create base models using decision trees.
-# 
-# The lecture introduced three popular homogeneous ensemble frameworks: bagging, random forest, and boosting. We also learned that the last framework is often implemented using *Adaboost* or, more recently, *gradient boosting*. The goal of the tutorial is to demonstrate how these ensemble learning frameworks work. In order to do this, we provide **implementations of multiple ensemble learners from scratch**. Another goal is to empower you to use ensemble algorithms in your work/studies. We pursue this goal by walking you through coding demos on **how to train, tune, and apply ensemble learning algorithms** using `sklearn` and other libraries. 
-# 
-# 
-# The outline of the tutorial is as follows:
-# - Preliminaries
-# - Random Forest (homogeneous ensemble)
-# - Boosting
-#   - The boosting principle
-#   - Gradient boosting
-
-# %%
-
-# best_split_column=[1,3,6,5,6]
-# best_split_value=[1,3,6,5,6]
-# impurity = [1,3,6,5,6]
-# n_final = [1,3,6,5,6]
-# record = pd.DataFrame([best_split_column,best_split_value,impurity,n_final]).transpose()
-# record.columns = ['best_split_column','best_split_value','impurity','n_final']
-# result = record.loc[record.best_split_column==max(record.best_split_column),:].sample()
-
-# # %%
-# head = [1,2,3,4,5]
-# random.choice(head)
-
-# %% [markdown]
-# # Preliminaries
-# We begin as usual with importing our standard libraries and also our standard modeling data. Since we are also familiar with data organization by now, we partition our data right away using standard `sklearn` functionality. For simplicity, we consider the split sampling method and create a training and a test set. Remember that cross-validation is preferable. 
 
 # %%
 
@@ -116,9 +77,9 @@ path_save = '/Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/Data/'
 # ------ 0.07924890518188477 s ------
 # [25.69946745212606] [25.699467452126065] [25.699467452126065]
 # After predicting also via random_forest_prediction
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
-#     easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
+mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
+    easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
+print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
 # ------ 59.18997502326965 s ------
 # ------ 59.026211977005005 s ------
 # ------ 0.09964394569396973 s ------
@@ -279,55 +240,55 @@ path_save = '/Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/Data/'
 
 # %%
 
-# Read original Data
-data = pyreadr.read_r(path+'SRData.RData')
-# path2 = path + 'mse&fi/'
+# # Read original Data
+# data = pyreadr.read_r(path+'SRData.RData')
+# # path2 = path + 'mse&fi/'
 
-dataname = ['abalone', 'bike', 'boston', 'concrete', 'cpu', 'csm', 'fb', 'parkinsons','servo', 'solar','synthetic1','synthetic2'] # real data
-# dataname = ['bike'] # real data
-# dataname = ['cpu'] # real data
-######## use some of them
+# dataname = ['abalone', 'bike', 'boston', 'concrete', 'cpu', 'csm', 'fb', 'parkinsons','servo', 'solar','synthetic1','synthetic2'] # real data
+# # dataname = ['bike'] # real data
+# # dataname = ['cpu'] # real data
+# ######## use some of them
 
-# Iterate to store ti and shap
-# k0_sklearn_oob_bike = []
-# k0_oob_pred_bike = []
-# k1_oob_pred_bike = []
-mse_k0_sklearn_oob_final = []
-mse_k0_oob_pred_final = []
-mse_k1_oob_pred_final = []
-mse_k0_sklearn_final = []
-mse_k0_pred_final = []
-mse_k1_pred_final = []
+# # Iterate to store ti and shap
+# # k0_sklearn_oob_bike = []
+# # k0_oob_pred_bike = []
+# # k1_oob_pred_bike = []
+# mse_k0_sklearn_oob_final = []
+# mse_k0_oob_pred_final = []
+# mse_k1_oob_pred_final = []
+# mse_k0_sklearn_final = []
+# mse_k0_pred_final = []
+# mse_k1_pred_final = []
 
-for index, name in enumerate(dataname):
+# for index, name in enumerate(dataname):
     
-    temp1,temp2,temp3,temp4,temp5,temp6 = easy_for_test(name=name,n_trees=200, random_state=888,\
-        n_features=2, oob_score = True, dt_max_depth=2)
-    mse_k0_sklearn_oob_final.append(temp1)
-    mse_k0_oob_pred_final.append(temp2)
-    mse_k1_oob_pred_final.append(temp3)
-    mse_k0_sklearn_final.append(temp4)
-    mse_k0_pred_final.append(temp5)
-    mse_k1_pred_final.append(temp6)
+#     temp1,temp2,temp3,temp4,temp5,temp6 = easy_for_test(name=name,n_trees=200, random_state=888,\
+#         n_features=2, oob_score = True, dt_max_depth=2)
+#     mse_k0_sklearn_oob_final.append(temp1)
+#     mse_k0_oob_pred_final.append(temp2)
+#     mse_k1_oob_pred_final.append(temp3)
+#     mse_k0_sklearn_final.append(temp4)
+#     mse_k0_pred_final.append(temp5)
+#     mse_k1_pred_final.append(temp6)
     
 
-# %%
-k_group = (['sklearn','k=0','k=1'])*2
-oob_all = (['oob'])*3+(['all'])*3
-mse_summary = pd.DataFrame([mse_k0_sklearn_oob_final,mse_k0_oob_pred_final,mse_k1_oob_pred_final,mse_k0_sklearn_final,mse_k0_pred_final,mse_k1_pred_final])
-mse_summary.columns = dataname
-mse_tags = pd.DataFrame([k_group,oob_all]).T
-mse_tags.columns = {'k_group','oob_all'}
-mse_summary = pd.concat([mse_summary,mse_tags], axis=1)
-print(mse_summary)
+# # %%
+# k_group = (['sklearn','k=0','k=1'])*2
+# oob_all = (['oob'])*3+(['all'])*3
+# mse_summary = pd.DataFrame([mse_k0_sklearn_oob_final,mse_k0_oob_pred_final,mse_k1_oob_pred_final,mse_k0_sklearn_final,mse_k0_pred_final,mse_k1_pred_final])
+# mse_summary.columns = dataname
+# mse_tags = pd.DataFrame([k_group,oob_all]).T
+# mse_tags.columns = {'k_group','oob_all'}
+# mse_summary = pd.concat([mse_summary,mse_tags], axis=1)
+# print(mse_summary)
 
-# %% [markdown]
-# k=1 increases mse: concrete, (cpu), csm, fb, parkinsons, synthetic1 (multiplicative term)
+# # %% [markdown]
+# # k=1 increases mse: concrete, (cpu), csm, fb, parkinsons, synthetic1 (multiplicative term)
 
-# %%
-# store the results, don't need to run it again
-mse_summary.to_csv(path_save+'mse_summary1.csv')
-mse_summary.to_csv(Path.cwd().joinpath("RF_from_scratch/Data/mse_summary2.csv"))
+# # %%
+# # store the results, don't need to run it again
+# mse_summary.to_csv(path_save+'mse_summary1.csv')
+# mse_summary.to_csv(Path.cwd().joinpath("RF_from_scratch/Data/mse_summary2.csv"))
 # print(mse_summary)
 # Store tree in a pickle
 # with open(Path.cwd().joinpath('mse_k0_from_scratch_train.pickle'), 'wb') as f:

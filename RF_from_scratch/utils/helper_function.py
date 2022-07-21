@@ -245,18 +245,22 @@ def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0, m
         _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_left])
         # Reject if min_samples_leaf is not guaranteed
         # check that both children have samples sizes at least k+1! 
-        while (len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or (len(y_above) < min_samples_leaf): 
+        while ((len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or\
+             (len(y_above) < min_samples_leaf)) and len(potential_split_candidates)>(j_left+1): 
             j_left+=1
+            # breakpoint()
             _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_left])    
         
-        j_right=n
+        j_right=n-2
+        # breakpoint()
         _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_right])
         # Reject if min_samples_leaf is not guaranteed
         # check that both children have samples sizes at least k+1! 
-        while (len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or (len(y_above) < min_samples_leaf): 
+        while ((len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or\
+             (len(y_above) < min_samples_leaf)) and j_right>j_left: 
             j_right-=1
             _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_right]) 
-            
+
         potential_splits[column_index] = potential_split_candidates[j_left:j_right]
 
 
