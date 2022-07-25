@@ -309,7 +309,7 @@ def create_leaf(y, typ):
 def determine_type_of_feature(df):
     
     feature_types = []
-    n_unique_values_treshold = 15
+    n_unique_values_treshold = 2
     for feature in df.columns:
         if feature != "label":
             unique_values = df[feature].unique()
@@ -686,6 +686,6 @@ def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_s
          n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
     mse_k0_sklearn_oob.append(mse_oob)
     mse_k0_sklearn.append(mse_rf_prediction_sklearn)
-    return mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred
+    return mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_pred,mse_k1_pred,mse_k0_sklearn
     
 
