@@ -255,7 +255,7 @@ print(mse_summary)
 # %%
 # store the results, don't need to run it again
 # mse_summary.to_csv(path_save+'mse_summary1.csv')
-mse_summary.to_csv(Path.cwd().joinpath("RF_from_scratch/Data/mse_summary3.csv"))
+mse_summary.to_csv(Path.cwd().joinpath("RF_from_scratch/Data/mse_summary_k.csv"))
 # mse_summary2: thredshold for categorical features is 15
 # mse_summary3: thredshold for categorical features is 2
 # Store tree in a pickle

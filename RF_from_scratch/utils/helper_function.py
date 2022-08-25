@@ -1,6 +1,7 @@
 # Reference
 # https://github.com/SebastianMantey/Decision-Tree-from-Scratch/blob/master/notebooks/Video%2010%20-%20Regression%201.ipynb
 # Import standard Python libraries
+from typing import Counter
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd 
@@ -150,7 +151,8 @@ def calculate_impurity(y, k=0, typ="regression"):
         impurity = impurity*n/(n-k) # add tree_depth to argument
         # shap value (consistency problem)
     else:
-        print("n<=k, error!")
+        print("n<=k, error!") # stop spliting
+        print(n)
     return impurity
 
 def calculate_overall_impurity(y_below, y_above, k=0, typ="regression"):
@@ -273,6 +275,8 @@ def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0, m
             if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
                 potential_splits[column_index].append(potential_split_candidates)
 
+            # Scan all the potential features if categorical (without dummy encoding)
+
             # for index in range(len(unique_values)):  # All unique feature values
             #     if index != 0:  # Skip first value, we need the difference between next values
             #         # Stop early if remaining features are constant
@@ -322,9 +326,9 @@ def determine_type_of_feature(df):
     
     return feature_types
 
-def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=5, min_samples_split=2,
-                            random_subspace = None, tree_num = 0,typ="regression",k=0, random_state=None):
-
+def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=8, min_samples_split=2,
+                            random_subspace = None, tree_num = 0,typ="regression", random_state=None):
+                            # ,k=0
     'same function as in the Decision Tree notebook but now we add random_subspace argument'
     # random_state = check_random_state(random_state)
     # Data preparation
@@ -336,9 +340,12 @@ def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=5, mi
         X = X.values  # Change all to NumPy array for faster calculations
         y = y.values
     # If we have started the tree, X should already be a NumPy array from the code above
-    potential_splits = get_potential_splits(X, y, random_subspace, random_state, k, min_samples_leaf)  # Check for all possible splits ONLY using the random subspace and not all features!    
+    potential_splits = get_potential_splits(X, y, random_subspace, random_state, min_samples_leaf)  # Check for all possible splits ONLY using the random subspace and not all features!    
     # Base cases
-    if (check_purity(y)) or (len(y) < 2*min_samples_leaf) or (counter == max_depth) or (len(y)<min_samples_split) or potential_splits=={}:
+    if (check_purity(y)) or (len(y) < 2*min_samples_leaf) or (len(y) <= Counter)\
+        (counter == max_depth) or (len(y)<min_samples_split) or \
+            potential_splits=={}:
+            # Add another argument to control k is constant or not (k=NULL)
         classification, feature_name = create_leaf(y, typ)
         return classification, feature_name
 
@@ -346,7 +353,7 @@ def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=5, mi
     else:
         counter += 1  # Tells us how deep the tree is
         # print(potential_splits)
-        best_split_column, best_split_value, gain = determine_best_split(X, y, potential_splits,typ=typ,k=k)  # Select best split based on impurity
+        best_split_column, best_split_value, gain = determine_best_split(X, y, potential_splits,typ=typ,k=counter)  # Select best split based on impurity
         # print(best_split_column, best_split_value, gain)
         X_below, X_above, y_below, y_above = split_data(X, y, best_split_column, best_split_value)  # Execute best split
         
@@ -370,10 +377,10 @@ def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=5, mi
         # Pull answers from tree
         yes_answer, yes_feature_gain = decision_tree_algorithm(X_below, y_below, counter, min_samples_leaf,
                                                                 max_depth, min_samples_split, random_subspace,
-                                                                tree_num,typ,k, random_state)
+                                                                tree_num,typ,random_state)
         no_answer, no_feature_gain = decision_tree_algorithm(X_above, y_above, counter, min_samples_leaf,
                                                             max_depth, min_samples_split, random_subspace,
-                                                            tree_num,typ,k, random_state)
+                                                            tree_num,typ,random_state)
 
         # Ensure explanation actually shows useful information
         if yes_answer == no_answer: # If decisions are the same, only display one
@@ -506,7 +513,8 @@ def random_forest_algorithm_oob(X, y, n_trees, n_features=None, dt_max_depth=2,t
         tree, feature_gain0 = decision_tree_algorithm(X_inbag, y_inbag,
                                                       max_depth=dt_max_depth,
                                                       random_subspace=n_features,
-                                                      tree_num=i,typ=typ,k=k,
+                                                      tree_num=i,typ=typ,
+                                                      # k=k,
                                                       min_samples_split=min_samples_split, 
                                                       min_samples_leaf=min_samples_leaf,
                                                       random_state=None) #creates individual trees
@@ -568,7 +576,7 @@ def random_forest_predictions(test_df, forest, typ='regression'):
 # The following could be wrapped in a function
 def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_samples_split=2, min_samples_leaf=1,\
                     #n_bootstrap=data.shape[0], bootstrap_ratio=1, train_ratio=0.7, bootstrap=True\
-                    n_features=None, dt_max_depth=2,typ="regression", k=0):
+                    n_features=None, dt_max_depth=8,typ="regression"): #, k=0
     # if len(y)<n_bootstrap, take the ratio
     # how to decide bootstrap_ratio???
     
@@ -579,8 +587,9 @@ def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_sampl
     #                                                 n_trees=n_trees, n_features=n_features,
     #                                                 dt_max_depth=dt_max_depth,typ=typ,k=k)
     forest, feature_gain, mse_oob_pred = random_forest_algorithm_oob(X, y,n_trees=n_trees, n_features=n_features,
-                                                    dt_max_depth=dt_max_depth,typ=typ,k=k, random_state=random_state,
+                                                    dt_max_depth=dt_max_depth,typ=typ,random_state=random_state,
                                                      oob_score=oob_score, min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf)
+                                                    #  k=k, 
 #     # store the feature_importance
 #     feature_gain_result = pd.DataFrame(columns=["tree_num","feature", "value"])
 #     for i,j in enumerate(feature_gain):
@@ -613,7 +622,7 @@ def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_sampl
 ######## don't need to repeat sklearn when k is not the same
 
 
-def generate_mse_sklearn(X,y, random_state=888, n_estimators = 1, oob_score = True, dt_max_depth=2,n_features=None, min_samples_split=2, min_samples_leaf=1):
+def generate_mse_sklearn(X,y, random_state=888, n_estimators = 1, oob_score = True, dt_max_depth=8,n_features=None, min_samples_split=2, min_samples_leaf=1):
     # if len(y)<n_bootstrap, take the ratio
     # how to decide bootstrap_ratio???
     
@@ -632,7 +641,7 @@ def generate_mse_sklearn(X,y, random_state=888, n_estimators = 1, oob_score = Tr
     return mse_sklearn, mse_rf_prediction_sklearn
 
 ##### wrap the following 
-def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_score = True, dt_max_depth=2):
+def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_score = True, dt_max_depth=8):
 
     # Read original Data
     data = pyreadr.read_r(path+'SRData.RData')
@@ -668,15 +677,17 @@ def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_s
     mse_k0_sklearn = []
 
     # fi_k0_simulation_s['df_{}'.format(name)],
-    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, k=0, n_trees=n_trees,\
+    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, n_trees=n_trees,\
         random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
+    # k=0,
     # mse_k0_from_scratch_inbag.append(mse_inbag)
     # mse_k0_from_scratch_oob.append(mse_oob)
     mse_k0_oob_pred.append(mse_oob_pred)
     mse_k0_pred.append(mse_rf_prediction)
     # fi_k1_simulation_s['df_{}'.format(name)],
-    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, k=1, n_trees=n_trees,\
+    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, n_trees=n_trees,\
         random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
+    # k=1, 
     # mse_k1_from_scratch_inbag.append(mse_inbag)
     # mse_k1_from_scratch_oob.append(mse_oob)
     mse_k1_oob_pred.append(mse_oob_pred)
