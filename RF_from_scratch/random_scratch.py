@@ -207,55 +207,58 @@ path_save = '/Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/Data/'
 # [1672896.77493479] [1563830.322253841] [1541431.9924319147] [1592436.8681786775] [1483593.223293898] [1464048.148547606]
 # %%
 
-# Read original Data
-data = pyreadr.read_r(path+'SRData.RData')
-# path2 = path + 'mse&fi/'
+# # Read original Data
+# data = pyreadr.read_r(path+'SRData.RData')
+# # path2 = path + 'mse&fi/'
 
-dataname = ['abalone', 'bike', 'boston', 'concrete', 'cpu', 'csm', 'fb', 'parkinsons','servo', 'solar','synthetic1','synthetic2'] # real data
-# dataname = ['bike'] # real data
-# dataname = ['cpu'] # real data
-######## use some of them
+# dataname = ['abalone', 'bike', 'boston', 'concrete', 'cpu', 'csm', 'fb', 'parkinsons','servo', 'solar','synthetic1','synthetic2'] # real data
+# # dataname = ['bike'] # real data
+# # dataname = ['cpu'] # real data
+# ######## use some of them
 
-# Iterate to store ti and shap
-# k0_sklearn_oob_bike = []
-# k0_oob_pred_bike = []
-# k1_oob_pred_bike = []
-mse_k0_sklearn_oob_final = []
-mse_k0_oob_pred_final = []
-mse_k1_oob_pred_final = []
-mse_k0_sklearn_final = []
-mse_k0_pred_final = []
-mse_k1_pred_final = []
-
-for index, name in enumerate(dataname):
+# # Iterate to store ti and shap
+# # k0_sklearn_oob_bike = []
+# # k0_oob_pred_bike = []
+# # k1_oob_pred_bike = []
+# mse_k0_sklearn_oob_final = []
+# mse_k0_oob_pred_final = []
+# mse_k1_oob_pred_final = []
+# mse_kd_oob_pred_final = []
+# mse_k0_sklearn_final = []
+# mse_k0_pred_final = []
+# mse_k1_pred_final = []
+# mse_kd_pred_final = []
+# for index, name in enumerate(dataname):
     
-    temp1,temp2,temp3,temp4,temp5,temp6 = easy_for_test(name=name,n_trees=200, random_state=888,\
-        n_features=2, oob_score = True, dt_max_depth=2)
-    mse_k0_sklearn_oob_final.append(temp1)
-    mse_k0_oob_pred_final.append(temp2)
-    mse_k1_oob_pred_final.append(temp3)
-    mse_k0_sklearn_final.append(temp4)
-    mse_k0_pred_final.append(temp5)
-    mse_k1_pred_final.append(temp6)
-    
+#     temp1,temp2,temp3,temp4,temp5,temp6,temp7,temp8 = easy_for_test(name=name,n_trees=200, random_state=888,\
+#         n_features=2, oob_score = True, dt_max_depth=8)
+#     mse_k0_sklearn_oob_final.append(temp1)
+#     mse_k0_oob_pred_final.append(temp2)
+#     mse_k1_oob_pred_final.append(temp3)
+#     mse_kd_oob_pred_final.append(temp4)
+#     mse_k0_sklearn_final.append(temp5)
+#     mse_k0_pred_final.append(temp6)
+#     mse_k1_pred_final.append(temp7)
+#     mse_kd_pred_final.append(temp8)
 
-# %%
-k_group = (['sklearn','k=0','k=1'])*2
-oob_all = (['oob'])*3+(['all'])*3
-mse_summary = pd.DataFrame([mse_k0_sklearn_oob_final,mse_k0_oob_pred_final,mse_k1_oob_pred_final,mse_k0_sklearn_final,mse_k0_pred_final,mse_k1_pred_final])
-mse_summary.columns = dataname
-mse_tags = pd.DataFrame([k_group,oob_all]).T
-mse_tags.columns = {'k_group','oob_all'}
-mse_summary = pd.concat([mse_summary,mse_tags], axis=1)
-print(mse_summary)
+# # %%
+# k_group = (['sklearn','k=0','k=1','k=TreeDepth'])*2
+# oob_all = (['oob'])*4+(['all'])*4
+# mse_summary = pd.DataFrame([mse_k0_sklearn_oob_final,mse_k0_oob_pred_final,mse_k1_oob_pred_final,mse_kd_oob_pred_final,\
+#     mse_k0_sklearn_final,mse_k0_pred_final,mse_k1_pred_final,mse_kd_pred_final])
+# mse_summary.columns = dataname
+# mse_tags = pd.DataFrame([k_group,oob_all]).T
+# mse_tags.columns = {'k_group','oob_all'}
+# mse_summary = pd.concat([mse_summary,mse_tags], axis=1)
+# print(mse_summary)
 
-# # %% [markdown]
-# # k=1 increases mse: concrete, (cpu), csm, fb, parkinsons, synthetic1 (multiplicative term)
+# # # %% [markdown]
+# # # k=1 increases mse: concrete, (cpu), csm, fb, parkinsons, synthetic1 (multiplicative term)
 
-# %%
-# store the results, don't need to run it again
-# mse_summary.to_csv(path_save+'mse_summary1.csv')
-mse_summary.to_csv(Path.cwd().joinpath("RF_from_scratch/Data/mse_summary_k.csv"))
+# # %%
+# # store the results, don't need to run it again
+# # mse_summary.to_csv(path_save+'mse_summary1.csv')
+# mse_summary.to_csv(Path.cwd().joinpath("RF_from_scratch/Data/mse_summary_k.csv"))
 # mse_summary2: thredshold for categorical features is 15
 # mse_summary3: thredshold for categorical features is 2
 # Store tree in a pickle

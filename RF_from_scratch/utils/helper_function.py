@@ -27,6 +27,8 @@ from sklearn.utils.random import sample_without_replacement
 # from ..utils import rand_uniform
 # from .utils.random import sample_without_replacement
 
+
+# Some examples that could transform cython to python
 def check_random_state(seed):
     """Turn seed into a np.random.RandomState instance.
 
@@ -70,10 +72,11 @@ def rand_uniform(low:float,high:float,random_state:np.uint32):
     return float(((high - low) * float(our_rand_r(random_state)) /
             float(np.uint32(0x7FFFFFFF))) + low)
 
-
+# Start from here
 def check_purity(y, typ='regression'):
     
-    'checks if a leaf node is perfectly pure, in other words, if the leaf node contains only one class'
+    """checks if a leaf node is perfectly pure, in other words, 
+    if the leaf node contains only one class"""
     # also for regression case: min_samples_leaf = 1
     if typ == 'classification':
         unique_classes = np.unique(y)  # Count number of classes in section of data
@@ -86,7 +89,7 @@ def check_purity(y, typ='regression'):
 
 def classify_data(y):
     
-    'classifies data according to the majority class of each leaf'
+    """classifies data according to the majority class of each leaf"""
     # Only for classification case
     
     unique_classes, counts_unique_classes = np.unique(y, return_counts=True)
@@ -99,7 +102,7 @@ def classify_data(y):
 
 def split_data(X, y, split_column, split_value):
     
-    'splits data based on specific value, will yield both a split for the features X and target y'
+    """splits data based on specific value, will yield both a split for the features X and target y"""
     
     split_column_values = X[:, split_column]
     type_of_feature = FEATURE_TYPES[split_column]
@@ -122,7 +125,7 @@ def split_data(X, y, split_column, split_value):
 
 def calculate_impurity(y, k=0, typ="regression"):
     # method="gini",
-    'calculates impurity for each partition of data, either entropy or gini'
+    """calculates impurity for each partition of data, either entropy or gini"""
     n = len(y)
     # classification
     if (typ == "classification") or (len(np.unique(y)) == 2):
@@ -138,13 +141,7 @@ def calculate_impurity(y, k=0, typ="regression"):
         if len(y) == 0:   # empty data
             impurity = 0
         else:
-            impurity = np.mean((y-np.mean(y))**2)
-        # /n??? - MSE is a bit easier to interpret
-        ###### Sum of square error????
-        ###### https://www.stat.cmu.edu/~cshalizi/350/2008/lectures/24/lecture-24.pdf
-
-        #classification
-        #regression : y is binary -> equal to gini
+            impurity = np.mean((y-np.mean(y))**2) # RMSE
     
     # for binary case, finite sample correction, impurity is weighted by n/(n-1)
     if n>k:
@@ -157,7 +154,7 @@ def calculate_impurity(y, k=0, typ="regression"):
 
 def calculate_overall_impurity(y_below, y_above, k=0, typ="regression"):
 
-    'calculates the total entropy after each split'
+    """calculates the total entropy after each split"""
 
     n = len(y_below) + len(y_above)
     p_data_below = len(y_below) / n
@@ -168,44 +165,43 @@ def calculate_overall_impurity(y_below, y_above, k=0, typ="regression"):
 
     return overall_impurity, n
 
-def determine_best_split(X, y, potential_splits,typ="regression",k=0):
-    
-    'selects which split lowered gini/mse the most'
+def determine_best_split(X, y, potential_splits, n,typ="regression",k=None):
+    # n is the number of obs
+    # len(y) is the number of resampling obs
+    """selects which split lowered gini/rmse the most"""
     first_iteration = True
-    # n_final=len(y)
     overall_impurity = calculate_impurity(y,typ=typ,k=k)  # the function will loop over and replace this with lower impurity values
     overall_impurity_for_gain = overall_impurity.copy()
     best_split_column=[]
     best_split_value=[]
-    # impurity = []
-    n_final = []
+
     for column_index in potential_splits:
         for value in potential_splits[column_index]:
             _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=value)
             # check that both children have samples sizes at least k+1! 
-            # if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)): 
-            current_overall_impurity, n = calculate_overall_impurity(y_below, y_above,k=k, typ=typ)
-            # impurity.append(current_overall_impurity)
-            # # Goes through each potential split and only updates if it lowers entropy
-            # 
-            if first_iteration or current_overall_impurity < overall_impurity: 
-                first_iteration = False
-                overall_impurity = current_overall_impurity # Updates only if lower entropy split found, in the end this is greedy search
-                # best_split_column = column_index
-                # best_split_value = value
-                best_split_column = [column_index]
-                best_split_value = [value]
-                n_final = [n]
+            if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)): 
+                current_overall_impurity, _ = calculate_overall_impurity(y_below, y_above,k=k, typ=typ)
+            else:
+                continue
+            # Appended only if impurity is the same
             if current_overall_impurity == overall_impurity: 
                 best_split_column.append(column_index)
                 best_split_value.append(value)
-                n_final.append(n)
+            # Replaced only if lower impurity split found
+            if first_iteration or current_overall_impurity < overall_impurity: 
+                first_iteration = False
+                overall_impurity = current_overall_impurity 
+                best_split_column = [column_index]
+                best_split_value = [value]
 
     # randomly select multiple potential splits
-    record = pd.DataFrame([best_split_column,best_split_value,n_final]).transpose()
-    record.columns = ['best_split_column','best_split_value','n_final']
+    record = pd.DataFrame([best_split_column,best_split_value]).transpose()
+    record.columns = ['best_split_column','best_split_value']
     # breakpoint()
-    result = record.sample()
+    if(record.shape[0]==0):
+        breakpoint()
+    else:
+        result = record.sample()
     # try:
     #     result = record.sample()
     # except:
@@ -215,13 +211,14 @@ def determine_best_split(X, y, potential_splits,typ="regression",k=0):
     #     raise
 
     gain = overall_impurity_for_gain - current_overall_impurity
-    rescale_gain = gain*result.n_final/len(y) #might only use rescale_gain
+    rescale_gain = gain*len(y)/n # might only use rescale_gain
     return int(result.best_split_column), float(result.best_split_value), rescale_gain
 
 def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0, min_samples_leaf=1):
     
-    'first, takes every unique value of every feature in the feature space, then finds the midpoint between each value'
-    'modified to add random_subspace for random forest'
+    '''first, takes every unique value of every feature in the feature space, 
+    then finds the midpoint between each value
+    modified to add random_subspace for random forest'''
     # Get valid random state
     # random_state = check_random_state(random_state)
     potential_splits = {}
@@ -235,7 +232,6 @@ def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0, m
         column_indices = np.array(column_indices)[sample_without_replacement(n_population=len(column_indices),\
          n_samples=random_subspace, random_state=random_state)]
     
-
     for column_index in column_indices:
         potential_splits[column_index] = [] 
         values = X[:, column_index] 
@@ -326,8 +322,8 @@ def determine_type_of_feature(df):
     
     return feature_types
 
-def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=8, min_samples_split=2,
-                            random_subspace = None, tree_num = 0,typ="regression", random_state=None):
+def decision_tree_algorithm(X, y, n,counter=0, min_samples_leaf=1, max_depth=8, min_samples_split=2,
+                            random_subspace = None, tree_num = 0,typ="regression", random_state=None,k=None):
                             # ,k=0
     'same function as in the Decision Tree notebook but now we add random_subspace argument'
     # random_state = check_random_state(random_state)
@@ -340,9 +336,20 @@ def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=8, mi
         X = X.values  # Change all to NumPy array for faster calculations
         y = y.values
     # If we have started the tree, X should already be a NumPy array from the code above
-    potential_splits = get_potential_splits(X, y, random_subspace, random_state, min_samples_leaf)  # Check for all possible splits ONLY using the random subspace and not all features!    
+
+    # Control whether k is depth or assigned in advance
+    if k:
+        # k=k
+        potential_splits = get_potential_splits(X, y, random_subspace, random_state,k, min_samples_leaf)  
+    else:
+        k=counter
+        # get the potential splits for the next depth
+        potential_splits = get_potential_splits(X, y, random_subspace, random_state,k+1, min_samples_leaf)  
+    # Check for all possible splits ONLY using the random subspace and not all features!    
+    
     # Base cases
-    if (check_purity(y)) or (len(y) < 2*min_samples_leaf) or (len(y) <= Counter)\
+    # breakpoint()
+    if (check_purity(y)) or (len(y) < 2*min_samples_leaf) or (len(y) < counter) or \
         (counter == max_depth) or (len(y)<min_samples_split) or \
             potential_splits=={}:
             # Add another argument to control k is constant or not (k=NULL)
@@ -353,7 +360,7 @@ def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=8, mi
     else:
         counter += 1  # Tells us how deep the tree is
         # print(potential_splits)
-        best_split_column, best_split_value, gain = determine_best_split(X, y, potential_splits,typ=typ,k=counter)  # Select best split based on impurity
+        best_split_column, best_split_value, gain = determine_best_split(X, y, potential_splits,n=n,typ=typ,k=k)  # Select best split based on impurity
         # print(best_split_column, best_split_value, gain)
         X_below, X_above, y_below, y_above = split_data(X, y, best_split_column, best_split_value)  # Execute best split
         
@@ -375,12 +382,12 @@ def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=8, mi
         sub_tree = {question: []}
         feature_gain = [[tree_num, feature_name, gain]]
         # Pull answers from tree
-        yes_answer, yes_feature_gain = decision_tree_algorithm(X_below, y_below, counter, min_samples_leaf,
+        yes_answer, yes_feature_gain = decision_tree_algorithm(X_below, y_below,n, counter, min_samples_leaf,
                                                                 max_depth, min_samples_split, random_subspace,
-                                                                tree_num,typ,random_state)
-        no_answer, no_feature_gain = decision_tree_algorithm(X_above, y_above, counter, min_samples_leaf,
+                                                                tree_num,typ,random_state,k=None)
+        no_answer, no_feature_gain = decision_tree_algorithm(X_above, y_above,n, counter, min_samples_leaf,
                                                             max_depth, min_samples_split, random_subspace,
-                                                            tree_num,typ,random_state)
+                                                            tree_num,typ,random_state,k=None)
 
         # Ensure explanation actually shows useful information
         if yes_answer == no_answer: # If decisions are the same, only display one
@@ -465,8 +472,10 @@ def _generate_unsampled_indices(random_state, n_samples, n_samples_bootstrap):
 
     return unsampled_indices
 
-def random_forest_algorithm_oob(X, y, n_trees, n_features=None, dt_max_depth=2,typ="regression",k=0, random_state=888, oob_score =True, min_samples_split=2, min_samples_leaf=1):
-    'puts the bootstrap sample in the decision tree algorithm with max depth and the random subset of features set, in otherwords, builds the forest tree by tree'
+def random_forest_algorithm_oob(X, y, n_trees, n_features=None, dt_max_depth=2,typ="regression",
+ random_state=888, oob_score =True, min_samples_split=2, min_samples_leaf=1,k=None):
+    '''puts the bootstrap sample in the decision tree algorithm with max depth and the random subset of
+     features set, in otherwords, builds the forest tree by tree'''
     forest = []
     feature_gain = []
     # if issparse(X):
@@ -510,14 +519,13 @@ def random_forest_algorithm_oob(X, y, n_trees, n_features=None, dt_max_depth=2,t
             X_oob = X
             # random_seed = random_instance
         # random.seed(seed[i])
-        tree, feature_gain0 = decision_tree_algorithm(X_inbag, y_inbag,
+        tree, feature_gain0 = decision_tree_algorithm(X_inbag, y_inbag,n_samples,
                                                       max_depth=dt_max_depth,
                                                       random_subspace=n_features,
                                                       tree_num=i,typ=typ,
-                                                      # k=k,
                                                       min_samples_split=min_samples_split, 
                                                       min_samples_leaf=min_samples_leaf,
-                                                      random_state=None) #creates individual trees
+                                                      random_state=None, k=k) #creates individual trees
 
         # if we only consider oob
         y_predict_oob = decision_tree_predictions(X_oob, tree)
@@ -576,7 +584,7 @@ def random_forest_predictions(test_df, forest, typ='regression'):
 # The following could be wrapped in a function
 def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_samples_split=2, min_samples_leaf=1,\
                     #n_bootstrap=data.shape[0], bootstrap_ratio=1, train_ratio=0.7, bootstrap=True\
-                    n_features=None, dt_max_depth=8,typ="regression"): #, k=0
+                    n_features=None, dt_max_depth=8,typ="regression",k=None): #, k=0
     # if len(y)<n_bootstrap, take the ratio
     # how to decide bootstrap_ratio???
     
@@ -588,7 +596,8 @@ def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_sampl
     #                                                 dt_max_depth=dt_max_depth,typ=typ,k=k)
     forest, feature_gain, mse_oob_pred = random_forest_algorithm_oob(X, y,n_trees=n_trees, n_features=n_features,
                                                     dt_max_depth=dt_max_depth,typ=typ,random_state=random_state,
-                                                     oob_score=oob_score, min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf)
+                                                     oob_score=oob_score, min_samples_split=min_samples_split,
+                                                      min_samples_leaf=min_samples_leaf,k=k)
                                                     #  k=k, 
 #     # store the feature_importance
 #     feature_gain_result = pd.DataFrame(columns=["tree_num","feature", "value"])
@@ -673,12 +682,16 @@ def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_s
     mse_k1_oob_pred = []
     mse_k1_pred = []
 
+    mse_kd_oob_pred = []
+    mse_kd_pred = []
+
     mse_k0_sklearn_oob = []
     mse_k0_sklearn = []
 
+
     # fi_k0_simulation_s['df_{}'.format(name)],
     mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, n_trees=n_trees,\
-        random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
+        random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth,k=0)
     # k=0,
     # mse_k0_from_scratch_inbag.append(mse_inbag)
     # mse_k0_from_scratch_oob.append(mse_oob)
@@ -686,17 +699,24 @@ def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_s
     mse_k0_pred.append(mse_rf_prediction)
     # fi_k1_simulation_s['df_{}'.format(name)],
     mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, n_trees=n_trees,\
-        random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
+        random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth,k=1)
     # k=1, 
     # mse_k1_from_scratch_inbag.append(mse_inbag)
     # mse_k1_from_scratch_oob.append(mse_oob)
     mse_k1_oob_pred.append(mse_oob_pred)
     mse_k1_pred.append(mse_rf_prediction)
+
+    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, n_trees=n_trees,\
+        random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth,k=None)
+    mse_kd_oob_pred.append(mse_oob_pred)
+    mse_kd_pred.append(mse_rf_prediction)
+
     # sklearn
     mse_oob, mse_rf_prediction_sklearn = generate_mse_sklearn(X,y, n_estimators=n_trees, random_state=random_state,\
          n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
     mse_k0_sklearn_oob.append(mse_oob)
     mse_k0_sklearn.append(mse_rf_prediction_sklearn)
-    return mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_pred,mse_k1_pred,mse_k0_sklearn
+    return mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+        mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred
     
 
