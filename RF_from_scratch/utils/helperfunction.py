@@ -1,7 +1,4 @@
-# Reference
-# https://github.com/SebastianMantey/Decision-Tree-from-Scratch/blob/master/notebooks/Video%2010%20-%20Regression%201.ipynb
 # Import standard Python libraries
-from typing import Counter
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd 
@@ -27,8 +24,6 @@ from sklearn.utils.random import sample_without_replacement
 # from ..utils import rand_uniform
 # from .utils.random import sample_without_replacement
 
-
-# Some examples that could transform cython to python
 def check_random_state(seed):
     """Turn seed into a np.random.RandomState instance.
 
@@ -72,11 +67,10 @@ def rand_uniform(low:float,high:float,random_state:np.uint32):
     return float(((high - low) * float(our_rand_r(random_state)) /
             float(np.uint32(0x7FFFFFFF))) + low)
 
-# Start from here
+
 def check_purity(y, typ='regression'):
     
-    """checks if a leaf node is perfectly pure, in other words, 
-    if the leaf node contains only one class"""
+    'checks if a leaf node is perfectly pure, in other words, if the leaf node contains only one class'
     # also for regression case: min_samples_leaf = 1
     if typ == 'classification':
         unique_classes = np.unique(y)  # Count number of classes in section of data
@@ -89,7 +83,7 @@ def check_purity(y, typ='regression'):
 
 def classify_data(y):
     
-    """classifies data according to the majority class of each leaf"""
+    'classifies data according to the majority class of each leaf'
     # Only for classification case
     
     unique_classes, counts_unique_classes = np.unique(y, return_counts=True)
@@ -102,7 +96,7 @@ def classify_data(y):
 
 def split_data(X, y, split_column, split_value):
     
-    """splits data based on specific value, will yield both a split for the features X and target y"""
+    'splits data based on specific value, will yield both a split for the features X and target y'
     
     split_column_values = X[:, split_column]
     type_of_feature = FEATURE_TYPES[split_column]
@@ -125,7 +119,7 @@ def split_data(X, y, split_column, split_value):
 
 def calculate_impurity(y, k=0, typ="regression"):
     # method="gini",
-    """calculates impurity for each partition of data, either entropy or gini"""
+    'calculates impurity for each partition of data, either entropy or gini'
     n = len(y)
     # classification
     if (typ == "classification") or (len(np.unique(y)) == 2):
@@ -141,20 +135,25 @@ def calculate_impurity(y, k=0, typ="regression"):
         if len(y) == 0:   # empty data
             impurity = 0
         else:
-            impurity = np.mean((y-np.mean(y))**2) # RMSE
+            impurity = np.mean((y-np.mean(y))**2)
+        # /n??? - MSE is a bit easier to interpret
+        ###### Sum of square error????
+        ###### https://www.stat.cmu.edu/~cshalizi/350/2008/lectures/24/lecture-24.pdf
+
+        #classification
+        #regression : y is binary -> equal to gini
     
     # for binary case, finite sample correction, impurity is weighted by n/(n-1)
     if n>k:
         impurity = impurity*n/(n-k) # add tree_depth to argument
         # shap value (consistency problem)
     else:
-        print("n<=k, error!") # stop spliting
-        print(n)
+        print("n<=k, error!")
     return impurity
 
 def calculate_overall_impurity(y_below, y_above, k=0, typ="regression"):
 
-    """calculates the total entropy after each split"""
+    'calculates the total entropy after each split'
 
     n = len(y_below) + len(y_above)
     p_data_below = len(y_below) / n
@@ -165,49 +164,60 @@ def calculate_overall_impurity(y_below, y_above, k=0, typ="regression"):
 
     return overall_impurity, n
 
-
-def determine_best_split(X, y, potential_splits, n,typ="regression",k=None):
-    # n is the number of obs
-    # len(y) is the number of resampling obs
-    """selects which split lowered gini/rmse the most"""
+def determine_best_split(X, y, potential_splits,typ="regression",k=0):
+    
+    'selects which split lowered gini/mse the most'
     first_iteration = True
+    # n_final=len(y)
     overall_impurity = calculate_impurity(y,typ=typ,k=k)  # the function will loop over and replace this with lower impurity values
     overall_impurity_for_gain = overall_impurity.copy()
     best_split_column=[]
     best_split_value=[]
-
+    # impurity = []
+    n_final = []
     for column_index in potential_splits:
         for value in potential_splits[column_index]:
             _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=value)
             # check that both children have samples sizes at least k+1! 
-            if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)): 
-                current_overall_impurity, _ = calculate_overall_impurity(y_below, y_above,k=k, typ=typ)
-            else:
-                continue
-            # Appended only if impurity is the same
+            # if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)): 
+            current_overall_impurity, n = calculate_overall_impurity(y_below, y_above,k=k, typ=typ)
+            # impurity.append(current_overall_impurity)
+            # # Goes through each potential split and only updates if it lowers entropy
+            # 
+            if first_iteration or current_overall_impurity < overall_impurity: 
+                first_iteration = False
+                overall_impurity = current_overall_impurity # Updates only if lower entropy split found, in the end this is greedy search
+                # best_split_column = column_index
+                # best_split_value = value
+                best_split_column = [column_index]
+                best_split_value = [value]
+                n_final = [n]
             if current_overall_impurity == overall_impurity: 
                 best_split_column.append(column_index)
                 best_split_value.append(value)
-            # Replaced only if lower impurity split found
-            if first_iteration or current_overall_impurity + np.finfo('double').eps < overall_impurity: 
-                first_iteration = False
-                overall_impurity = current_overall_impurity 
-                best_split_column = [column_index]
-                best_split_value = [value]
+                n_final.append(n)
 
     # randomly select multiple potential splits
-    record = pd.DataFrame([best_split_column,best_split_value]).transpose()
-    record.columns = ['best_split_column','best_split_value']
+    record = pd.DataFrame([best_split_column,best_split_value,n_final]).transpose()
+    record.columns = ['best_split_column','best_split_value','n_final']
+    # breakpoint()
     result = record.sample()
+    # try:
+    #     result = record.sample()
+    # except:
+    #     # print(len(y_below), len(y))
+    #     print(potential_splits)
+    #     print(record)
+    #     raise
+
     gain = overall_impurity_for_gain - current_overall_impurity
-    rescale_gain = gain*len(y)/n # might only use rescale_gain
+    rescale_gain = gain*result.n_final/len(y) #might only use rescale_gain
     return int(result.best_split_column), float(result.best_split_value), rescale_gain
 
 def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0, min_samples_leaf=1):
     
-    '''first, takes every unique value of every feature in the feature space, 
-    then finds the midpoint between each value
-    modified to add random_subspace for random forest'''
+    'first, takes every unique value of every feature in the feature space, then finds the midpoint between each value'
+    'modified to add random_subspace for random forest'
     # Get valid random state
     # random_state = check_random_state(random_state)
     potential_splits = {}
@@ -215,75 +225,70 @@ def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0, m
     # Only need second value of .shape which is columns
     
     column_indices = list(range(n_columns))
-    if (random_subspace is not None) and random_subspace <= len(column_indices):  # Randomly chosen features
+    if random_subspace and random_subspace <= len(column_indices):  # Randomly chosen features
         # column_indices = random.sample(population=column_indices, k=random_subspace)
         # random_instance = check_random_state(random_state)
         column_indices = np.array(column_indices)[sample_without_replacement(n_population=len(column_indices),\
          n_samples=random_subspace, random_state=random_state)]
-    
+
     for column_index in column_indices:
         potential_splits[column_index] = [] 
         values = X[:, column_index] 
-        # type_of_feature = FEATURE_TYPES[column_index]
         unique_values = np.unique(values)  # Get all unique values in each column
-        for index in range(len(unique_values)):  # All unique feature values
-                if index != 0:  # Skip first value, we need the difference between next values
-                    # Stop early if remaining features are constant
-                    # current_value = unique_values[index]
-                    # previous_value = unique_values[index - 1]  # Find a value and the next smallest value
-                    potential_split = (unique_values[index] + unique_values[index - 1]) / 2  # Find difference between the two as a potential split
-                    # print(random_state)
-                    # potential_split = rand_uniform(previous_value,current_value,random_state)
-                    # if potential_split == current_value:
-                    #     potential_split = previous_value
 
-                    # try to split the data
-                    _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split)
-                    # Reject if min_samples_leaf is not guaranteed
-                    # check that both children have samples sizes at least k+1! 
-                    if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
-                        potential_splits[column_index].append(potential_split)
-                    # Reject if min_samples_leaf is not guaranteed
-        
-
-        # #vectorized midpoints
-        # n = len(unique_values)
-        # if type_of_feature == "continuous":
-        #     potential_split_candidates  = (unique_values[0:(n-1)] + unique_values[1:n])/2
-        #     if len(potential_split_candidates)>0:
-        #     #no need to check the full array with split_data, it should be just the boundaries that are potential trouble:
-        #         j_left=0
-        #         _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_left])
-        #         # Reject if min_samples_leaf is not guaranteed
-        #         # check that both children have samples sizes at least k+1! 
-        #         # try:
-        #         while ((len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or\
-        #             (len(y_above) < min_samples_leaf)) and len(potential_split_candidates)>(j_left+1): 
-        #             j_left+=1
-        #             # breakpoint()
-        #             _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_left])    
-        #         # except:
-        #         #     import pdb; pdb.set_trace()
-        #         j_right=n-2
-        #         # breakpoint()
-        #         _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_right])
-        #         # Reject if min_samples_leaf is not guaranteed
-        #         # check that both children have samples sizes at least k+1! 
-        #         while ((len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or\
-        #             (len(y_above) < min_samples_leaf)) and j_right>j_left: 
-        #             j_right-=1
-        #             _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_right]) 
-
-        #         potential_splits[column_index] = potential_split_candidates[j_left:j_right]
-        # else:
-        #     potential_split_candidates = unique_values[0]
-        #     _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates)
-        #     if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
-        #         potential_splits[column_index].append(potential_split_candidates)
-
-            # Scan all the potential features if categorical (without dummy encoding)
-
+        #vectorized midpoints
+        n = len(unique_values)
+        potential_split_candidates  = (unique_values[0:(n-1)] + unique_values[1:n])/2
+        if len(potential_split_candidates)>0:
+            #no need to check the full array with split_data, it should be just the boundaries that are potential trouble:
+            # breakpoint()
+            j_left=0
+            # try:
+            _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_left])
+            # except:
+            #     # print(len(y_below), len(y))
+            #     print(len(potential_split_candidates))
+            #     print(j_left)
+            #     raise
+            # Reject if min_samples_leaf is not guaranteed
+            # check that both children have samples sizes at least k+1! 
+            while ((len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or\
+                (len(y_above) < min_samples_leaf)) and len(potential_split_candidates)>(j_left+1): 
+                j_left+=1
+                # breakpoint()
+                _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_left])    
             
+            j_right=n-2
+            # breakpoint()
+            _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_right])
+            # Reject if min_samples_leaf is not guaranteed
+            # check that both children have samples sizes at least k+1! 
+            while ((len(y_below) < (k+1)) or (len(y_above) < (k+1)) or (len(y_below) < min_samples_leaf) or\
+                (len(y_above) < min_samples_leaf)) and j_right>j_left: 
+                j_right-=1
+                _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_right]) 
+
+            potential_splits[column_index] = potential_split_candidates[j_left:j_right]
+
+
+            # for index in range(len(unique_values)):  # All unique feature values
+            #     if index != 0:  # Skip first value, we need the difference between next values
+            #         # Stop early if remaining features are constant
+            #         # current_value = unique_values[index]
+            #         # previous_value = unique_values[index - 1]  # Find a value and the next smallest value
+            #         potential_split = (unique_values[index] + unique_values[index - 1]) / 2  # Find difference between the two as a potential split
+            #         # print(random_state)
+            #         # potential_split = rand_uniform(previous_value,current_value,random_state)
+            #         # if potential_split == current_value:
+            #         #     potential_split = previous_value
+
+            #         # try to split the data
+            #         _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split)
+            #         # Reject if min_samples_leaf is not guaranteed
+            #         # check that both children have samples sizes at least k+1! 
+            #         if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
+            #             potential_splits[column_index].append(potential_split)
+            #         # Reject if min_samples_leaf is not guaranteed
 
         if len(potential_splits[column_index]) == 0:
             potential_splits = {key:val for key, val in potential_splits.items() if key != column_index}
@@ -315,9 +320,9 @@ def determine_type_of_feature(df):
     
     return feature_types
 
-def decision_tree_algorithm(X, y, n,counter=0, min_samples_leaf=1, max_depth=8, min_samples_split=2,
-                            random_subspace = None, tree_num = 0,typ="regression", random_state=None,k=None):
-                            # ,k=0
+def decision_tree_algorithm(X, y, counter=0, min_samples_leaf=1, max_depth=5, min_samples_split=2,
+                            random_subspace = None, tree_num = 0,typ="regression",k=0, random_state=None):
+
     'same function as in the Decision Tree notebook but now we add random_subspace argument'
     # random_state = check_random_state(random_state)
     # Data preparation
@@ -329,25 +334,9 @@ def decision_tree_algorithm(X, y, n,counter=0, min_samples_leaf=1, max_depth=8, 
         X = X.values  # Change all to NumPy array for faster calculations
         y = y.values
     # If we have started the tree, X should already be a NumPy array from the code above
-    # # If we have started the tree, X should already be a NumPy array from the code above
-    # potential_splits = get_potential_splits(X, y, random_subspace, random_state, k, min_samples_leaf)  # Check for all possible splits ONLY using the random subspace and not all features!    
-    
-    # Control whether k is depth or assigned in advance
-    if k is not None:
-        k1=k
-        potential_splits = get_potential_splits(X, y, random_subspace, random_state,k1, min_samples_leaf)  
-    else:
-        k1=counter
-        # get the potential splits for the next depth
-        potential_splits = get_potential_splits(X, y, random_subspace, random_state,k1+1, min_samples_leaf)  
-    # Check for all possible splits ONLY using the random subspace and not all features!    
-    
+    potential_splits = get_potential_splits(X, y, random_subspace, random_state, k, min_samples_leaf)  # Check for all possible splits ONLY using the random subspace and not all features!    
     # Base cases
-    # is_leaf
-    if (check_purity(y)) or (len(y) < 2*min_samples_leaf) or (len(y) <= k1) or \
-        (counter == max_depth) or (len(y)<min_samples_split) or \
-            potential_splits=={}:
-            # Add another argument to control k is constant or not (k=NULL)
+    if (check_purity(y)) or (len(y) < 2*min_samples_leaf) or (counter == max_depth) or (len(y)<min_samples_split) or potential_splits=={}:
         classification, feature_name = create_leaf(y, typ)
         num_leaf+=1
         print(num_leaf)
@@ -357,14 +346,14 @@ def decision_tree_algorithm(X, y, n,counter=0, min_samples_leaf=1, max_depth=8, 
     else:
         counter += 1  # Tells us how deep the tree is
         # print(potential_splits)
-        best_split_column, best_split_value, gain = determine_best_split(X, y, potential_splits,n=n,typ=typ,k=k1)  # Select best split based on impurity
+        best_split_column, best_split_value, gain = determine_best_split(X, y, potential_splits,typ=typ,k=k)  # Select best split based on impurity
         # print(best_split_column, best_split_value, gain)
         X_below, X_above, y_below, y_above = split_data(X, y, best_split_column, best_split_value)  # Execute best split
         
-        # check for empty data or too few samples
-        if (min(len(y_below),len(y_above)) < min_samples_leaf):
-            classification, feature_name = create_leaf(y, typ)
-            return classification, feature_name
+        # # check for empty data or too few samples
+        # if (min(len(y_below),len(y_above)) < min_samples_leaf):
+        #     classification, feature_name = create_leaf(y, typ)
+        #     return classification, feature_name
         
         # Code to explain decisions made by tree to users
         feature_name = COLUMN_HEADERS[best_split_column]
@@ -379,12 +368,12 @@ def decision_tree_algorithm(X, y, n,counter=0, min_samples_leaf=1, max_depth=8, 
         sub_tree = {question: []}
         feature_gain = [[tree_num, feature_name, gain]]
         # Pull answers from tree
-        yes_answer, yes_feature_gain = decision_tree_algorithm(X_below, y_below,n, counter, min_samples_leaf,
+        yes_answer, yes_feature_gain = decision_tree_algorithm(X_below, y_below, counter, min_samples_leaf,
                                                                 max_depth, min_samples_split, random_subspace,
-                                                                tree_num,typ,random_state,k)
-        no_answer, no_feature_gain = decision_tree_algorithm(X_above, y_above,n, counter, min_samples_leaf,
+                                                                tree_num,typ,k, random_state)
+        no_answer, no_feature_gain = decision_tree_algorithm(X_above, y_above, counter, min_samples_leaf,
                                                             max_depth, min_samples_split, random_subspace,
-                                                            tree_num,typ,random_state,k)
+                                                            tree_num,typ,k, random_state)
 
         # Ensure explanation actually shows useful information
         if yes_answer == no_answer: # If decisions are the same, only display one
@@ -469,10 +458,8 @@ def _generate_unsampled_indices(random_state, n_samples, n_samples_bootstrap):
 
     return unsampled_indices
 
-def random_forest_algorithm_oob(X, y, n_trees, n_features=None, dt_max_depth=2,typ="regression",
- random_state=888, oob_score =True, min_samples_split=2, min_samples_leaf=1,k=None):
-    '''puts the bootstrap sample in the decision tree algorithm with max depth and the random subset of
-     features set, in otherwords, builds the forest tree by tree'''
+def random_forest_algorithm_oob(X, y, n_trees, n_features=None, dt_max_depth=2,typ="regression",k=0, random_state=888, oob_score =True, min_samples_split=2, min_samples_leaf=1):
+    'puts the bootstrap sample in the decision tree algorithm with max depth and the random subset of features set, in otherwords, builds the forest tree by tree'
     forest = []
     feature_gain = []
     # if issparse(X):
@@ -516,13 +503,13 @@ def random_forest_algorithm_oob(X, y, n_trees, n_features=None, dt_max_depth=2,t
             X_oob = X
             # random_seed = random_instance
         # random.seed(seed[i])
-        tree, feature_gain0 = decision_tree_algorithm(X_inbag, y_inbag,n_samples,
+        tree, feature_gain0 = decision_tree_algorithm(X_inbag, y_inbag,
                                                       max_depth=dt_max_depth,
                                                       random_subspace=n_features,
-                                                      tree_num=i,typ=typ,
+                                                      tree_num=i,typ=typ,k=k,
                                                       min_samples_split=min_samples_split, 
                                                       min_samples_leaf=min_samples_leaf,
-                                                      random_state=None, k=k) #creates individual trees
+                                                      random_state=None) #creates individual trees
 
         # if we only consider oob
         y_predict_oob = decision_tree_predictions(X_oob, tree)
@@ -581,7 +568,7 @@ def random_forest_predictions(test_df, forest, typ='regression'):
 # The following could be wrapped in a function
 def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_samples_split=2, min_samples_leaf=1,\
                     #n_bootstrap=data.shape[0], bootstrap_ratio=1, train_ratio=0.7, bootstrap=True\
-                    n_features=None, dt_max_depth=8,typ="regression",k=None): #, k=0
+                    n_features=None, dt_max_depth=2,typ="regression", k=0):
     # if len(y)<n_bootstrap, take the ratio
     # how to decide bootstrap_ratio???
     
@@ -592,10 +579,8 @@ def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_sampl
     #                                                 n_trees=n_trees, n_features=n_features,
     #                                                 dt_max_depth=dt_max_depth,typ=typ,k=k)
     forest, feature_gain, mse_oob_pred = random_forest_algorithm_oob(X, y,n_trees=n_trees, n_features=n_features,
-                                                    dt_max_depth=dt_max_depth,typ=typ,random_state=random_state,
-                                                     oob_score=oob_score, min_samples_split=min_samples_split,
-                                                      min_samples_leaf=min_samples_leaf,k=k)
-                                                    #  k=k, 
+                                                    dt_max_depth=dt_max_depth,typ=typ,k=k, random_state=random_state,
+                                                     oob_score=oob_score, min_samples_split=min_samples_split, min_samples_leaf=min_samples_leaf)
 #     # store the feature_importance
 #     feature_gain_result = pd.DataFrame(columns=["tree_num","feature", "value"])
 #     for i,j in enumerate(feature_gain):
@@ -628,7 +613,7 @@ def generate_mse_fi(X,y, n_trees=1, random_state=888,oob_score = True, min_sampl
 ######## don't need to repeat sklearn when k is not the same
 
 
-def generate_mse_sklearn(X,y, random_state=888, n_estimators = 1, oob_score = True, dt_max_depth=8,n_features=None, min_samples_split=2, min_samples_leaf=1):
+def generate_mse_sklearn(X,y, random_state=888, n_estimators = 1, oob_score = True, dt_max_depth=2,n_features=None, min_samples_split=2, min_samples_leaf=1):
     # if len(y)<n_bootstrap, take the ratio
     # how to decide bootstrap_ratio???
     
@@ -647,7 +632,7 @@ def generate_mse_sklearn(X,y, random_state=888, n_estimators = 1, oob_score = Tr
     return mse_sklearn, mse_rf_prediction_sklearn
 
 ##### wrap the following 
-def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_score = True, dt_max_depth=8):
+def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_score = True, dt_max_depth=2):
 
     # Read original Data
     data = pyreadr.read_r(path+'SRData.RData')
@@ -679,93 +664,27 @@ def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_s
     mse_k1_oob_pred = []
     mse_k1_pred = []
 
-    mse_kd_oob_pred = []
-    mse_kd_pred = []
-
     mse_k0_sklearn_oob = []
     mse_k0_sklearn = []
-
-
+    print(name)
     # fi_k0_simulation_s['df_{}'.format(name)],
-    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, n_trees=n_trees,\
-        random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth,k=0)
-    # k=0,
+    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, k=0, n_trees=n_trees,\
+        random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
     # mse_k0_from_scratch_inbag.append(mse_inbag)
     # mse_k0_from_scratch_oob.append(mse_oob)
     mse_k0_oob_pred.append(mse_oob_pred)
     mse_k0_pred.append(mse_rf_prediction)
     # fi_k1_simulation_s['df_{}'.format(name)],
-    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, n_trees=n_trees,\
-        random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth,k=1)
-    # k=1, 
+    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, k=1, n_trees=n_trees,\
+        random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
     # mse_k1_from_scratch_inbag.append(mse_inbag)
     # mse_k1_from_scratch_oob.append(mse_oob)
     mse_k1_oob_pred.append(mse_oob_pred)
     mse_k1_pred.append(mse_rf_prediction)
-
-    mse_oob_pred, mse_rf_prediction = generate_mse_fi(X,y, n_trees=n_trees,\
-        random_state=random_state, n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth,k=None)
-    mse_kd_oob_pred.append(mse_oob_pred)
-    mse_kd_pred.append(mse_rf_prediction)
-
     # sklearn
     mse_oob, mse_rf_prediction_sklearn = generate_mse_sklearn(X,y, n_estimators=n_trees, random_state=random_state,\
          n_features=n_features, oob_score = oob_score, dt_max_depth=dt_max_depth)
     mse_k0_sklearn_oob.append(mse_oob)
     mse_k0_sklearn.append(mse_rf_prediction_sklearn)
-    return mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
-        mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred
+    return mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred
     
-
-##### check num of leafs for sklearn
-def num_leaf_sklearn(clf):
-    n_nodes = clf.tree_.node_count
-    children_left = clf.tree_.children_left
-    children_right = clf.tree_.children_right
-    feature = clf.tree_.feature
-    threshold = clf.tree_.threshold
-
-    node_depth = np.zeros(shape=n_nodes, dtype=np.int64)
-    is_leaves = np.zeros(shape=n_nodes, dtype=bool)
-    stack = [(0, 0)]  # start with the root node id (0) and its depth (0)
-    while len(stack) > 0:
-        # `pop` ensures each node is only visited once
-        node_id, depth = stack.pop()
-        node_depth[node_id] = depth
-
-        # If the left and right child of a node is not the same we have a split
-        # node
-        is_split_node = children_left[node_id] != children_right[node_id]
-        # If a split node, append left and right children and depth to `stack`
-        # so we can loop through them
-        if is_split_node:
-            stack.append((children_left[node_id], depth + 1))
-            stack.append((children_right[node_id], depth + 1))
-        else:
-            is_leaves[node_id] = True
-
-    print(
-        "The binary tree structure has {n} nodes and has "
-        "the following tree structure:\n".format(n=n_nodes)
-    )
-    for i in range(n_nodes):
-        if is_leaves[i]:
-            print(
-                "{space}node={node} is a leaf node.".format(
-                    space=node_depth[i] * "\t", node=i
-                )
-            )
-        else:
-            print(
-                "{space}node={node} is a split node: "
-                "go to node {left} if X[:, {feature}] <= {threshold} "
-                "else to node {right}.".format(
-                    space=node_depth[i] * "\t",
-                    node=i,
-                    left=children_left[i],
-                    feature=feature[i],
-                    threshold=threshold[i],
-                    right=children_right[i],
-                )
-            )
-    return np.sum(is_leaves)

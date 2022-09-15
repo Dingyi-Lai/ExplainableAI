@@ -1,6 +1,6 @@
 # %%
 
-from utils.helper_function import easy_for_test, decision_tree_algorithm, decision_tree_predictions
+from utils.helper_function import easy_for_test, decision_tree_algorithm, decision_tree_predictions,num_leaf_sklearn
 import pyreadr
 import random
 
@@ -9,8 +9,8 @@ from pathlib import Path
 import numpy as np
 import pandas as pd 
 from sklearn.metrics import mean_squared_error
-path = '/Users/aubrey/Documents/GitHub/ExplainableAI/ConferenceSubmission/Data/'
-path_save = '/Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/Data/'
+# path = '/Users/aubrey/Documents/GitHub/ExplainableAI/ConferenceSubmission/Data/'
+# path_save = '/Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/Data/'
 # %load_ext autoreload
 # %autoreload 2
 
@@ -19,38 +19,43 @@ path_save = '/Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/Data/'
 
 # Create a random dataset
 # Read original Data
-# data = pyreadr.read_r(path+'SRData.RData')
-# random.seed(0)
+data = pyreadr.read_r(Path.cwd().joinpath('ConferenceSubmission/Data/SRData.RData'))
+random.seed(0)
 
-# X0 = data['boston']
-# X1 = X0.select_dtypes(include=np.number).iloc[:,:-1] # numerical features exclude the last column (y)
-# if len(X0.select_dtypes(include='category').columns) !=0: # recognize categorical feature
-#     X2 = pd.get_dummies(X0[(X0.select_dtypes(include='category')).columns], drop_first=True) # change it into one_hot_encoding
-# else: X2 = pd.DataFrame()
+X0 = data['boston']
+X1 = X0.select_dtypes(include=np.number).iloc[:,:-1] # numerical features exclude the last column (y)
+if len(X0.select_dtypes(include='category').columns) !=0: # recognize categorical feature
+    X2 = pd.get_dummies(X0[(X0.select_dtypes(include='category')).columns], drop_first=True) # change it into one_hot_encoding
+else: X2 = pd.DataFrame()
 
-# X = pd.concat(objs=[X2, X1], axis=1) # combine dummies and numerical features
-# y = data['boston'].iloc[:,-1] # the last column is y
+X = pd.concat(objs=[X2, X1], axis=1) # combine dummies and numerical features
+y = data['boston'].iloc[:,-1] # the last column is y
 
 # # from sklearn import datasets
 # # X,y = datasets.load_boston(return_X_y=True)
 
-# # Fit regression model
-# regr_1 = DecisionTreeRegressor(max_depth=8)
-# #regr_2 = DecisionTreeRegressor(max_depth=5)
-# regr_1.fit(X, y)
-# #regr_2.fit(X, y)
-# # Predict
-# mse_sklearn = mean_squared_error(y, regr_1.predict(X))
-# print(mse_sklearn)
-# # 2.08803819218943
+# Fit regression model
+regr_1 = DecisionTreeRegressor(max_depth=8)
+#regr_2 = DecisionTreeRegressor(max_depth=5)
+regr_1.fit(X, y)
+#regr_2.fit(X, y)
+# Predict
+mse_sklearn = mean_squared_error(y, regr_1.predict(X))
+print(mse_sklearn)
+
+print(num_leaf_sklearn(regr_1))
+# max_depth=7 mse_sklearn=3.04446734098988 num_leaf_sklearn=74
+# max_depth=8 mse_sklearn=2.08803819218943 num_leaf_sklearn=122
 # %%
-# X = pd.DataFrame(X)
-# y = pd.DataFrame(y)
-# sub_tree, feature_gain = decision_tree_algorithm(X, y, max_depth=8)
-# y_2 = decision_tree_predictions(X, sub_tree)
-# mse_from_scratch = mean_squared_error(y, y_2)
-# print(mse_from_scratch)
-# # 2.0880381921894298
+X = pd.DataFrame(X)
+y = pd.DataFrame(y)
+sub_tree, feature_gain = decision_tree_algorithm(X, y, max_depth=8,n=len(y),k=None)# 
+y_2 = decision_tree_predictions(X, sub_tree)
+print(sub_tree)
+mse_from_scratch = mean_squared_error(y, y_2)
+print(mse_from_scratch)
+# max_depth=7 mse_from_scratch=3.0223585198593192 num_leaf=74
+# max_depth=8 mse_from_scratch=2.1467208239169704 -> 2.0880381921894298 num_leaf=113 ->129 (after reuse original split function)
 # %%
 # # a single regression tree with no feature subsampling and without bootstrap
 # mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
