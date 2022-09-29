@@ -1,7 +1,6 @@
 # ExplainableAI
 Materials for researches in Explainable AI
 
-## RF_from_scratch
 ### Basic Tasks
 #### HS_titanic.ipynb
 - Related Paper: [https://proceedings.mlr.press/v162/agarwal22b.html](https://proceedings.mlr.press/v162/agarwal22b.html) It is a up-to-date method called Hierarchical Shrinkage which improves the accuracy and interpretability of tree-based models.
@@ -65,6 +64,7 @@ https://github.com/scikit-learn/scikit-learn/blob/a24c8b46/sklearn/ensemble/fore
 - plot power simulation for OOB and Inbag
 - plot NULL simulation for OOB and Inbag
 ### RF_from_scratch
+Reference: https://github.com/SebastianMantey/Decision-Tree-from-Scratch/blob/master/notebooks/Video%2010%20-%20Regression%201.ipynb
 #### Data
 #### utils
 only `helper_function.py` is used for construction in `random_scratch.py`
