@@ -68,7 +68,7 @@ print(mse_from_scratch)
 sub_tree3, feature_gain3, y_above_list3 = decision_tree_algorithm(X, y, max_depth=2,\
     n=len(y),k=0, if_HS = True, Lambda=10)# 
 y_3 = decision_tree_predictions(X, sub_tree3)
-# print(sub_tree)
+print(sub_tree)
 
 mse_from_scratch3 = mean_squared_error(y, y_3)
 print(mse_from_scratch3)
