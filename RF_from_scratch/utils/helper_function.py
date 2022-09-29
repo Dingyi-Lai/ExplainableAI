@@ -11,22 +11,17 @@ import pyreadr
 import time
 import pickle
 import random
+import multiprocessing as mp
 import warnings
 import numbers
 from warnings import warn
 from scipy.sparse import issparse
-# from itertools import compress
-# import operator
 from sklearn.metrics import mean_squared_error # squared=False -> root version
-path = '/Users/aubrey/Documents/GitHub/ExplainableAI/ConferenceSubmission/Data/'
 from treeinterpreter import treeinterpreter as ti
 from sklearn.ensemble import RandomForestRegressor
 np.random.seed(888) # keep consistent
 random.seed(888)
 from sklearn.utils.random import sample_without_replacement
-# from ..utils import rand_uniform
-# from .utils.random import sample_without_replacement
-
 
 # Some examples that could transform cython to python
 def check_random_state(seed):
@@ -203,6 +198,15 @@ def determine_best_split(X, y, potential_splits, n,typ="regression",k=None):
     rescale_gain = gain*len(y)/n # might only use rescale_gain
     return int(result.best_split_column), float(result.best_split_value), rescale_gain
 
+def split_in_loop(X, y, column_index, unique_values,index,min_samples_leaf,k):
+    potential_split = (unique_values[index] + unique_values[index - 1]) / 2
+    # try to split the data
+    _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split)
+    # Reject if min_samples_leaf is not guaranteed
+    # check that both children have samples sizes at least k+1! 
+    if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
+        return potential_split
+
 def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0, min_samples_leaf=1):
     
     '''first, takes every unique value of every feature in the feature space, 
@@ -224,27 +228,42 @@ def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0, m
     for column_index in column_indices:
         potential_splits[column_index] = [] 
         values = X[:, column_index] 
-        # type_of_feature = FEATURE_TYPES[column_index]
+        type_of_feature = FEATURE_TYPES[column_index]
         unique_values = np.unique(values)  # Get all unique values in each column
-        for index in range(len(unique_values)):  # All unique feature values
-                if index != 0:  # Skip first value, we need the difference between next values
-                    # Stop early if remaining features are constant
-                    # current_value = unique_values[index]
-                    # previous_value = unique_values[index - 1]  # Find a value and the next smallest value
-                    potential_split = (unique_values[index] + unique_values[index - 1]) / 2  # Find difference between the two as a potential split
-                    # print(random_state)
-                    # potential_split = rand_uniform(previous_value,current_value,random_state)
-                    # if potential_split == current_value:
-                    #     potential_split = previous_value
+        if type_of_feature == "continuous":
 
-                    # try to split the data
-                    _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split)
-                    # Reject if min_samples_leaf is not guaranteed
-                    # check that both children have samples sizes at least k+1! 
-                    if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
-                        potential_splits[column_index].append(potential_split)
-                    # Reject if min_samples_leaf is not guaranteed
-        
+            # pool = mp.Pool(mp.cpu_count())
+            # try:
+            #     potential_splits[column_index].extend([pool.apply(split_in_loop, args=(X, y,\
+            #         column_index, unique_values,index,min_samples_leaf,k)) \
+            #             for index in range(1,len(unique_values))])
+            # except:
+            #     pool.close()
+            # pool.close()    
+
+            for index in range(1,len(unique_values)):  # All unique feature values
+                # Skip first value, we need the difference between next values
+                # Stop early if remaining features are constant
+                # current_value = unique_values[index]
+                # previous_value = unique_values[index - 1]  # Find a value and the next smallest value
+                potential_split = (unique_values[index] + unique_values[index - 1]) / 2  # Find difference between the two as a potential split
+                # print(random_state)
+                # potential_split = rand_uniform(previous_value,current_value,random_state)
+                # if potential_split == current_value:
+                #     potential_split = previous_value
+
+                # try to split the data
+                _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split)
+                # Reject if min_samples_leaf is not guaranteed
+                # check that both children have samples sizes at least k+1! 
+                if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
+                    potential_splits[column_index].append(potential_split)
+                # Reject if min_samples_leaf is not guaranteed
+        else:
+            potential_split_candidates = unique_values[0]
+            _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates)
+            if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
+                potential_splits[column_index].append(potential_split_candidates)
 
         # #vectorized midpoints
         # n = len(unique_values)
@@ -275,15 +294,11 @@ def get_potential_splits(X, y, random_subspace = None, random_state=None, k=0, m
         #             _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates[j_right]) 
 
         #         potential_splits[column_index] = potential_split_candidates[j_left:j_right]
-        # else:
-        #     potential_split_candidates = unique_values[0]
-        #     _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split_candidates)
-        #     if (len(y_below) >= (k+1)) and (len(y_above) >= (k+1)) and (len(y_below) >= min_samples_leaf) and (len(y_above) >= min_samples_leaf): 
-        #         potential_splits[column_index].append(potential_split_candidates)
+        
 
             # Scan all the potential features if categorical (without dummy encoding)
 
-            
+
 
         if len(potential_splits[column_index]) == 0:
             potential_splits = {key:val for key, val in potential_splits.items() if key != column_index}
@@ -316,18 +331,26 @@ def determine_type_of_feature(df):
     return feature_types
 
 def decision_tree_algorithm(X, y, n,counter=0, min_samples_leaf=1, max_depth=8, min_samples_split=2,
-                            random_subspace = None, tree_num = 0,typ="regression", random_state=None,k=None):
+                            random_subspace = None, tree_num = 0,typ="regression", random_state=None,k=None,
+                            y_list=[], Lambda = 10, if_HS = True):
                             # ,k=0
     'same function as in the Decision Tree notebook but now we add random_subspace argument'
     # random_state = check_random_state(random_state)
     # Data preparation
-    num_leaf = 0
+
+    ###### check num_leaf
+    # num_leaf = 0
+
     if counter == 0:  # Counter tells us how deep the tree is, this is before the tree is initiated
         global COLUMN_HEADERS, FEATURE_TYPES
         COLUMN_HEADERS = X.columns
         FEATURE_TYPES = determine_type_of_feature(X)
         X = X.values  # Change all to NumPy array for faster calculations
         y = y.values
+        classification, feature_name = create_leaf(y, typ)
+        node_id = 0 # track the nodes
+        y_list = {node_id: []} # store all mean of y above
+
     # If we have started the tree, X should already be a NumPy array from the code above
     # # If we have started the tree, X should already be a NumPy array from the code above
     # potential_splits = get_potential_splits(X, y, random_subspace, random_state, k, min_samples_leaf)  # Check for all possible splits ONLY using the random subspace and not all features!    
@@ -339,52 +362,99 @@ def decision_tree_algorithm(X, y, n,counter=0, min_samples_leaf=1, max_depth=8, 
     else:
         k1=counter
         # get the potential splits for the next depth
-        potential_splits = get_potential_splits(X, y, random_subspace, random_state,k1+1, min_samples_leaf)  
+        potential_splits = get_potential_splits(X, y, random_subspace, random_state,k1, min_samples_leaf)  
     # Check for all possible splits ONLY using the random subspace and not all features!    
+    node_id = np.max(list((y_list.keys())))
+    classification, feature_name = create_leaf(y, typ)
     
     # Base cases
     # is_leaf
-    if (check_purity(y)) or (len(y) < 2*min_samples_leaf) or (len(y) <= k1) or \
+    if (check_purity(y)) or (len(y) < 2*min_samples_leaf) or (len(y) < k1) or \
         (counter == max_depth) or (len(y)<min_samples_split) or \
-            potential_splits=={}:
+        potential_splits=={}:
             # Add another argument to control k is constant or not (k=NULL)
-        classification, feature_name = create_leaf(y, typ)
-        num_leaf+=1
-        print(num_leaf)
-        return classification, feature_name
+        y_list[node_id].append(counter)
+        y_list[node_id].append(len(y))
+        y_list[node_id].append(classification)
+
+        if if_HS:
+            # analyse node_id and store the path to seq
+            y_listdf = pd.DataFrame(list(y_list.values()), columns=['depth','num','ymean'])
+            y_listdf['node_id'] = list(y_list.keys())
+            c = node_id
+            seq = [c]
+            for i in range(counter-1,0,-1):
+                fil = y_listdf.loc[y_listdf.depth==i,'node_id']
+                c = np.max(fil[fil<c])
+                seq.append(c)
+            seq.append(0)
+            seq.sort()
+            # weighted
+            y_HS = y_list[0][2]
+            for i,j in enumerate(seq):
+                if j<seq[-1]:
+                    # breakpoint()
+                    y_HS += (y_list[seq[i+1]][2] - y_list[j][2]) / (1 + Lambda / y_list[j][1])
+            ###### check num_leaf
+            # num_leaf+=1
+            # print(num_leaf)
+            y_list_HS = y_list.copy()
+            y_list_HS[node_id][2] = y_HS
+
+            return y_HS, feature_name, y_list_HS
+        else:
+            return classification, feature_name, y_list
 
     # Recursive part
     else:
+        y_list[node_id].append(counter)
+        y_list[node_id].append(len(y))
+        y_list[node_id].append(classification)
         counter += 1  # Tells us how deep the tree is
+        
         # print(potential_splits)
+        # try:
         best_split_column, best_split_value, gain = determine_best_split(X, y, potential_splits,n=n,typ=typ,k=k1)  # Select best split based on impurity
-        # print(best_split_column, best_split_value, gain)
+
         X_below, X_above, y_below, y_above = split_data(X, y, best_split_column, best_split_value)  # Execute best split
         
+        # classification, feature_name = create_leaf(y, typ)
+        # y_list.append(classification)
         # check for empty data or too few samples
         if (min(len(y_below),len(y_above)) < min_samples_leaf):
-            classification, feature_name = create_leaf(y, typ)
-            return classification, feature_name
-        
+            node_id += 1
+            y_list[node_id].append(counter)
+            y_list[node_id].append(len(y))
+            y_list[node_id].append(classification)
+            return classification, feature_name, y_list
+
+
         # Code to explain decisions made by tree to users
         feature_name = COLUMN_HEADERS[best_split_column]
         type_of_feature = FEATURE_TYPES[best_split_column]
         if type_of_feature == "continuous":
-            question = "{} <= {}".format(feature_name, best_split_value) # Initiate explanation of split
+            question = "{} <= {} with num of samples {} and current y {} and above y {}".format(feature_name, \
+                best_split_value, len(y), classification, y_list) # Initiate explanation of split
         # feature is categorical
         else:
-            question = "{} = {}".format(feature_name, best_split_value)
+            question = "{} = {} with num of samples {} and current y {} and above y {}".format(feature_name, \
+                best_split_value, len(y), classification, y_list)
         
         # instantiate sub-tree
         sub_tree = {question: []}
         feature_gain = [[tree_num, feature_name, gain]]
         # Pull answers from tree
-        yes_answer, yes_feature_gain = decision_tree_algorithm(X_below, y_below,n, counter, min_samples_leaf,
+        node_id_yes = node_id+1
+        y_list[node_id_yes] = []
+        yes_answer, yes_feature_gain,yes_list = decision_tree_algorithm(X_below, y_below,n, counter, min_samples_leaf,
                                                                 max_depth, min_samples_split, random_subspace,
-                                                                tree_num,typ,random_state,k)
-        no_answer, no_feature_gain = decision_tree_algorithm(X_above, y_above,n, counter, min_samples_leaf,
+                                                                tree_num,typ,random_state,k,y_list,Lambda)
+        node_id_no = np.max(list((yes_list.keys())))+1
+        yes_list[node_id_no] = []
+        no_answer, no_feature_gain,no_list = decision_tree_algorithm(X_above, y_above,n, counter, min_samples_leaf,
                                                             max_depth, min_samples_split, random_subspace,
-                                                            tree_num,typ,random_state,k)
+                                                            tree_num,typ,random_state,k,yes_list,Lambda)
+
 
         # Ensure explanation actually shows useful information
         if yes_answer == no_answer: # If decisions are the same, only display one
@@ -396,7 +466,7 @@ def decision_tree_algorithm(X, y, n,counter=0, min_samples_leaf=1, max_depth=8, 
             sub_tree[question].append(no_answer)
             feature_gain.extend(no_feature_gain)
 
-        return sub_tree, feature_gain
+        return sub_tree, feature_gain, no_list
 
 def predict_example(example, tree, counter=0):
 
@@ -409,7 +479,7 @@ def predict_example(example, tree, counter=0):
         counter += 1
     
     question = list(tree.keys())[0]
-    feature_name, comparison_operator, value = question.split(" ")
+    feature_name, comparison_operator, value = question.split(" ")[0:3]
 
     # Ask question
     if comparison_operator == "<=":
@@ -650,7 +720,7 @@ def generate_mse_sklearn(X,y, random_state=888, n_estimators = 1, oob_score = Tr
 def easy_for_test(name='cpu', n_trees=200, random_state=888, n_features=2, oob_score = True, dt_max_depth=8):
 
     # Read original Data
-    data = pyreadr.read_r(path+'SRData.RData')
+    data = pyreadr.read_r(Path.cwd().joinpath('ConferenceSubmission/Data/SRData.RData'))
     # path2 = path + 'mse&fi/'
     # Data processing
     X0 = data[name]
@@ -724,6 +794,7 @@ def num_leaf_sklearn(clf):
     children_right = clf.tree_.children_right
     feature = clf.tree_.feature
     threshold = clf.tree_.threshold
+    n_node_samples = clf.tree_.n_node_samples
 
     node_depth = np.zeros(shape=n_nodes, dtype=np.int64)
     is_leaves = np.zeros(shape=n_nodes, dtype=bool)
@@ -757,7 +828,7 @@ def num_leaf_sklearn(clf):
             )
         else:
             print(
-                "{space}node={node} is a split node: "
+                "{space}node={node} is a split node with weights {n_node_samples}: "
                 "go to node {left} if X[:, {feature}] <= {threshold} "
                 "else to node {right}.".format(
                     space=node_depth[i] * "\t",
@@ -766,6 +837,8 @@ def num_leaf_sklearn(clf):
                     feature=feature[i],
                     threshold=threshold[i],
                     right=children_right[i],
+                    n_node_samples = n_node_samples[i]
                 )
             )
+    
     return np.sum(is_leaves)

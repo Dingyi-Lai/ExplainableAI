@@ -1,23 +1,17 @@
-# %%
-
 from utils.helper_function import easy_for_test, decision_tree_algorithm, decision_tree_predictions,num_leaf_sklearn
 import pyreadr
 import random
-
+# import matplotlib.pyplot as plt
 from sklearn.tree import DecisionTreeRegressor
 from pathlib import Path
 import numpy as np
 import pandas as pd 
 from sklearn.metrics import mean_squared_error
-# path = '/Users/aubrey/Documents/GitHub/ExplainableAI/ConferenceSubmission/Data/'
-# path_save = '/Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/Data/'
-# %load_ext autoreload
-# %autoreload 2
+from imodels import HSTreeClassifierCV 
 
-# %%
 ###### test just decision_tree_algorithm:
 
-# Create a random dataset
+# Create a decision tree
 # Read original Data
 data = pyreadr.read_r(Path.cwd().joinpath('ConferenceSubmission/Data/SRData.RData'))
 random.seed(0)
@@ -35,7 +29,7 @@ y = data['boston'].iloc[:,-1] # the last column is y
 # # X,y = datasets.load_boston(return_X_y=True)
 
 # Fit regression model
-regr_1 = DecisionTreeRegressor(max_depth=8)
+regr_1 = DecisionTreeRegressor(max_depth=2)
 #regr_2 = DecisionTreeRegressor(max_depth=5)
 regr_1.fit(X, y)
 #regr_2.fit(X, y)
@@ -44,23 +38,46 @@ mse_sklearn = mean_squared_error(y, regr_1.predict(X))
 print(mse_sklearn)
 
 print(num_leaf_sklearn(regr_1))
+# plot_tree(regr_1)
+# plt.show()
+regr_2 = HSTreeClassifierCV(estimator_=regr_1)  # Applying HS to tree ensembles
+regr_2.fit(X, y)   # fit model
+mse_sklearn2 = mean_squared_error(y, regr_2.predict(X))
+print(mse_sklearn2)
+print(regr_2)
+print(regr_2.reg_param) #lambda
+
 # max_depth=7 mse_sklearn=3.04446734098988 num_leaf_sklearn=74
 # max_depth=8 mse_sklearn=2.08803819218943 num_leaf_sklearn=122
-# %%
+
 X = pd.DataFrame(X)
 y = pd.DataFrame(y)
-sub_tree, feature_gain = decision_tree_algorithm(X, y, max_depth=8,n=len(y),k=None)# 
+sub_tree, feature_gain, y_above_list = decision_tree_algorithm(X, y, max_depth=2,n=len(y),k=0, if_HS = True)# 
 y_2 = decision_tree_predictions(X, sub_tree)
 print(sub_tree)
+
 mse_from_scratch = mean_squared_error(y, y_2)
 print(mse_from_scratch)
+
 # max_depth=7 mse_from_scratch=3.0223585198593192 num_leaf=74
 # max_depth=8 mse_from_scratch=2.1467208239169704 -> 2.0880381921894298 num_leaf=113 ->129 (after reuse original split function)
+
+# k=None: 6.0665044378656034 max_depth=8 num_leaf=49
 # %%
 # # a single regression tree with no feature subsampling and without bootstrap
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
-#     easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred = \
+#     easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = False, dt_max_depth=8)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred)
+
+# ------ 5.187978982925415 s ------
+# ------ 4.756967306137085 s ------
+# ------ 3.89385986328125 s ------
+# ------ 0.01292729377746582 s ------
+# [2.08803819218943] [2.0880381921894298] [3.1042965268112543] [6.0665044378656034]
+# [2.08803819218943] [2.0880381921894298] [3.1042965268112543] [6.0665044378656034]
+
 # boston
 # ------ 1.1720707416534424 s ------
 # ------ 1.177666187286377 s ------
@@ -74,10 +91,19 @@ print(mse_from_scratch)
 # [1189358.0939978634] [1189358.0939978634] [1189358.0939978634] [1189358.0939978634] [1189358.0939978634] [1189358.0939978634]
 
 # %%
-# # a regression RF with no feature subsampling and without bootstrap
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
-#     easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = False, dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
+# a regression RF with no feature subsampling and without bootstrap
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred = \
+#     easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = False, dt_max_depth=8)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred)
+# ------ 260.3922040462494 s ------
+# ------ 240.88047051429749 s ------
+# ------ 198.3216359615326 s ------
+# ------ 0.2356281280517578 s ------    
+# [2.0880381921894298] [2.0880381921894298] [3.1226655733637374] [6.0665044378656034] 
+# [2.0880381921894298] [2.08803819218943] [3.122665573363736] [6.0665044378656034]
+
 # boston
 # ------ 47.22374510765076 s ------
 # ------ 46.860538721084595 s ------
@@ -90,10 +116,16 @@ print(mse_from_scratch)
 # ------ 0.0775609016418457 s ------
 # [1189358.0939978631] [1189358.0939978631] [1189358.0939978631] [1189358.0939978631] [1189358.0939978631] [1189358.0939978631]
 # %%
-# # a single regression tree with no feature subsampling and with bootstrap
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
-#     easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
+# a single regression tree with no feature subsampling and with bootstrap
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred = \
+#     easy_for_test('boston', n_trees=1, random_state=888, n_features=None, oob_score = True, dt_max_depth=8)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred)
+
+# [372.85851480270117] [372.98735981953405] [372.0496407457443] [372.58645821545423] 
+# [8.277857465770051] [8.406702482602903] [8.154533521208874] [10.511609341408018]
+
 # boston
 # /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:539: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
 #   warn(
@@ -120,10 +152,20 @@ print(mse_from_scratch)
 # [15911933.010625577] [15911933.010625577] [15911933.010625577] [1219151.2396910982] [1219151.2396910982] [1219151.2396910982]
 
 # %%
-# # a regression RF with no feature subsampling and with bootstrap
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
-#     easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = True, dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
+# a regression RF with no feature subsampling and with bootstrap
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred = \
+#     easy_for_test('boston', n_trees=50, random_state=888, n_features=None, oob_score = True, dt_max_depth=8)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred)
+
+# ------ 144.5541639328003 s ------
+# ------ 134.41313481330872 s ------
+# ------ 108.18750286102295 s ------
+# ------ 0.15381979942321777 s ------
+# [11.855114977007311] [11.468748124739776] [12.386535727235733] [13.390450402894459] 
+# [2.5680717055905986] [2.518996162200485] [3.154825318244759] [5.198276111826488]
+
 # boston
 # ------ 33.64089298248291 s ------
 # ------ 32.013039112091064 s ------
@@ -138,9 +180,18 @@ print(mse_from_scratch)
 # %%
 # a single regression tree with feature subsampling and no bootstrap
 # After predicting also via random_forest_prediction
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
-#     easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred = \
+#     easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = False, dt_max_depth=8)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred)
+# ------ 0.8094820976257324 s ------
+# ------ 0.6097729206085205 s ------
+# ------ 0.47420406341552734 s ------
+# ------ 0.005959987640380859 s ------
+# [5.777647767265414] [6.849476349930525] [12.690171182257904] [14.048672714402647]
+# [5.777647767265414] [6.849476349930525] [12.690171182257904] [14.048672714402647]
+
 # boston
 # ------ 0.19294118881225586 s ------
 # ------ 0.2405540943145752 s ------
@@ -153,9 +204,18 @@ print(mse_from_scratch)
 # [3285406.666936513] [1633756.9231196765] [2999702.9903363] [3285406.666936513] [1633756.9231196765] [2999702.9903363]
 # %%
 # a regression random forest with feature subsampling and no bootstrap
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
-#     easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = False,  dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred = \
+#     easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = False,  dt_max_depth=8)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred)
+# ------ 33.906386852264404 s ------
+# ------ 32.604050159454346 s ------
+# ------ 25.314924001693726 s ------
+# ------ 0.06840777397155762 s ------
+# [1.9391377274315615] [2.4713128830678066] [3.2006000105842105] [8.45041249280608] 
+# [1.9391377274315615] [2.4713128830678066] [3.2006000105842105] [8.45041249280608]
+
 # boston
 # ------ 8.47632098197937 s ------
 # ------ 8.238931894302368 s ------
@@ -168,9 +228,15 @@ print(mse_from_scratch)
 # [1622534.1080286095] [1515235.801127118] [1585328.1712459957] [1622534.1080286095] [1515235.801127118] [1585328.1712459957]
 # %%
 # a single regression tree with feature subsampling and bootstrap
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
-#     easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred = \
+#     easy_for_test('boston', n_trees=1, random_state=888, n_features=2, oob_score = True, dt_max_depth=8)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred)
+
+# [372.80550207975824] [379.36879092339075] [374.9984709796863] [375.9849894859138] 
+# [10.829106777077886] [18.58611507160771] [16.056781961760375] [18.11173117501624]
+
 # boston
 # /Users/aubrey/Documents/GitHub/ExplainableAI/RF_from_scratch/utils/helper_function.py:539: UserWarning: Some inputs do not have OOB scores. This probably means too few trees were used to compute any reliable OOB estimates.
 #   warn(
@@ -196,9 +262,19 @@ print(mse_from_scratch)
 # [16637684.897450801] [16252209.341190526] [16288705.71473319] [3320010.928588815] [2223570.1010203105] [2246869.7104294654]
 # %%
 # a regression random forest with feature subsampling and bootstrap
-# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred = \
-#     easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = True, dt_max_depth=2)
-# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_k0_sklearn,mse_k0_pred,mse_k1_pred)
+# mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred = \
+#     easy_for_test('boston', n_trees=50, random_state=888, n_features=2, oob_score = True, dt_max_depth=8)
+# print(mse_k0_sklearn_oob,mse_k0_oob_pred,mse_k1_oob_pred,mse_kd_oob_pred,\
+#         mse_k0_sklearn,mse_k0_pred,mse_k1_pred,mse_kd_pred)
+
+# ------ 25.31430673599243 s ------
+# ------ 23.02707004547119 s ------
+# ------ 18.30252504348755 s ------
+# ------ 0.09483504295349121 s ------
+# [13.48705211655512] [13.288608621637158] [12.82528733977663] [17.664684059340725] 
+# [3.831165999568835] [4.358166210970921] [5.018965290664204] [9.93110151768885]
+
 # boston
 # ------ 5.320831060409546 s ------
 # ------ 6.1016151905059814 s ------
@@ -212,9 +288,9 @@ print(mse_from_scratch)
 # [1672896.77493479] [1563830.322253841] [1541431.9924319147] [1592436.8681786775] [1483593.223293898] [1464048.148547606]
 # %%
 
-# # Read original Data
-# data = pyreadr.read_r(path+'SRData.RData')
-# # path2 = path + 'mse&fi/'
+# Read original Data
+# data = pyreadr.read_r(Path.cwd().joinpath('ConferenceSubmission/Data/SRData.RData'))
+# path2 = path + 'mse&fi/'
 
 # dataname = ['abalone', 'bike', 'boston', 'concrete', 'cpu', 'csm', 'fb', 'parkinsons','servo', 'solar','synthetic1','synthetic2'] # real data
 # # dataname = ['bike'] # real data
@@ -235,7 +311,7 @@ print(mse_from_scratch)
 # mse_kd_pred_final = []
 # for index, name in enumerate(dataname):
     
-#     temp1,temp2,temp3,temp4,temp5,temp6,temp7,temp8 = easy_for_test(name=name,n_trees=200, random_state=888,\
+#     temp1,temp2,temp3,temp4,temp5,temp6,temp7,temp8 = easy_for_test(name=name,n_trees=50, random_state=888,\
 #         n_features=2, oob_score = True, dt_max_depth=8)
 #     mse_k0_sklearn_oob_final.append(temp1)
 #     mse_k0_oob_pred_final.append(temp2)
@@ -257,12 +333,12 @@ print(mse_from_scratch)
 # mse_summary = pd.concat([mse_summary,mse_tags], axis=1)
 # print(mse_summary)
 
-# # # %% [markdown]
-# # # k=1 increases mse: concrete, (cpu), csm, fb, parkinsons, synthetic1 (multiplicative term)
+# # # # %% [markdown]
+# # # # k=1 increases mse: concrete, (cpu), csm, fb, parkinsons, synthetic1 (multiplicative term)
 
-# # %%
-# # store the results, don't need to run it again
-# # mse_summary.to_csv(path_save+'mse_summary1.csv')
+# # # %%
+# # # store the results, don't need to run it again
+# # # mse_summary.to_csv(path_save+'mse_summary1.csv')
 # mse_summary.to_csv(Path.cwd().joinpath("RF_from_scratch/Data/mse_summary_k.csv"))
 # mse_summary2: thredshold for categorical features is 15
 # mse_summary3: thredshold for categorical features is 2
