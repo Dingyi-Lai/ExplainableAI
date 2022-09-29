@@ -7,7 +7,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd 
 from sklearn.metrics import mean_squared_error
-from imodels import HSTreeClassifierCV 
+from imodels import HSTreeClassifierCV, HSTreeRegressor, HSTreeRegressorCV
 
 ###### test just decision_tree_algorithm:
 
@@ -16,20 +16,20 @@ from imodels import HSTreeClassifierCV
 data = pyreadr.read_r(Path.cwd().joinpath('ConferenceSubmission/Data/SRData.RData'))
 random.seed(0)
 
-X0 = data['boston']
+X0 = data['boston'][0:50]
 X1 = X0.select_dtypes(include=np.number).iloc[:,:-1] # numerical features exclude the last column (y)
 if len(X0.select_dtypes(include='category').columns) !=0: # recognize categorical feature
     X2 = pd.get_dummies(X0[(X0.select_dtypes(include='category')).columns], drop_first=True) # change it into one_hot_encoding
 else: X2 = pd.DataFrame()
 
 X = pd.concat(objs=[X2, X1], axis=1) # combine dummies and numerical features
-y = data['boston'].iloc[:,-1] # the last column is y
+y = data['boston'].iloc[0:50,-1] # the last column is y
 
 # # from sklearn import datasets
 # # X,y = datasets.load_boston(return_X_y=True)
 
 # Fit regression model
-regr_1 = DecisionTreeRegressor(max_depth=8)
+regr_1 = DecisionTreeRegressor(max_depth=2)
 #regr_2 = DecisionTreeRegressor(max_depth=5)
 regr_1.fit(X, y)
 #regr_2.fit(X, y)
@@ -40,25 +40,39 @@ print(mse_sklearn)
 # print(num_leaf_sklearn(regr_1))
 # plot_tree(regr_1)
 # plt.show()
-regr_2 = HSTreeClassifierCV(estimator_=regr_1)  # Applying HS to tree ensembles
+regr_2 = HSTreeRegressorCV(estimator_=regr_1)  # Applying HS to tree ensembles
 regr_2.fit(X, y)   # fit model
 mse_sklearn2 = mean_squared_error(y, regr_2.predict(X))
 print(mse_sklearn2)
 # print(regr_2)
 print(regr_2.reg_param) #lambda
 
+regr_3 = HSTreeRegressor(estimator_=regr_1, reg_param=10)  # Applying HS to tree ensembles
+regr_3.fit(X, y)   # fit model
+mse_sklearn3 = mean_squared_error(y, regr_3.predict(X))
+print(mse_sklearn3)
+
 # max_depth=7 mse_sklearn=3.04446734098988 num_leaf_sklearn=74
 # max_depth=8 mse_sklearn=2.08803819218943 num_leaf_sklearn=122
 
 X = pd.DataFrame(X)
 y = pd.DataFrame(y)
-sub_tree, feature_gain, y_above_list = decision_tree_algorithm(X, y, max_depth=8,\
+sub_tree, feature_gain, y_above_list = decision_tree_algorithm(X, y, max_depth=2,\
     n=len(y),k=0, if_HS = True, Lambda=regr_2.reg_param)# 
 y_2 = decision_tree_predictions(X, sub_tree)
 # print(sub_tree)
 
 mse_from_scratch = mean_squared_error(y, y_2)
 print(mse_from_scratch)
+
+sub_tree3, feature_gain3, y_above_list3 = decision_tree_algorithm(X, y, max_depth=2,\
+    n=len(y),k=0, if_HS = True, Lambda=10)# 
+y_3 = decision_tree_predictions(X, sub_tree3)
+# print(sub_tree)
+
+mse_from_scratch3 = mean_squared_error(y, y_3)
+print(mse_from_scratch3)
+
 
 # HS comparison
 # 2.08803819218943
