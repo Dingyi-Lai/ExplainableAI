@@ -29,7 +29,7 @@ y = data['boston'].iloc[:,-1] # the last column is y
 # # X,y = datasets.load_boston(return_X_y=True)
 
 # Fit regression model
-regr_1 = DecisionTreeRegressor(max_depth=2)
+regr_1 = DecisionTreeRegressor(max_depth=8)
 #regr_2 = DecisionTreeRegressor(max_depth=5)
 regr_1.fit(X, y)
 #regr_2.fit(X, y)
@@ -37,14 +37,14 @@ regr_1.fit(X, y)
 mse_sklearn = mean_squared_error(y, regr_1.predict(X))
 print(mse_sklearn)
 
-print(num_leaf_sklearn(regr_1))
+# print(num_leaf_sklearn(regr_1))
 # plot_tree(regr_1)
 # plt.show()
 regr_2 = HSTreeClassifierCV(estimator_=regr_1)  # Applying HS to tree ensembles
 regr_2.fit(X, y)   # fit model
 mse_sklearn2 = mean_squared_error(y, regr_2.predict(X))
 print(mse_sklearn2)
-print(regr_2)
+# print(regr_2)
 print(regr_2.reg_param) #lambda
 
 # max_depth=7 mse_sklearn=3.04446734098988 num_leaf_sklearn=74
@@ -52,12 +52,19 @@ print(regr_2.reg_param) #lambda
 
 X = pd.DataFrame(X)
 y = pd.DataFrame(y)
-sub_tree, feature_gain, y_above_list = decision_tree_algorithm(X, y, max_depth=2,n=len(y),k=0, if_HS = True)# 
+sub_tree, feature_gain, y_above_list = decision_tree_algorithm(X, y, max_depth=8,\
+    n=len(y),k=0, if_HS = True, Lambda=regr_2.reg_param)# 
 y_2 = decision_tree_predictions(X, sub_tree)
-print(sub_tree)
+# print(sub_tree)
 
 mse_from_scratch = mean_squared_error(y, y_2)
 print(mse_from_scratch)
+
+# HS comparison
+# 2.08803819218943
+# 3.8269002623540276
+# 10.0
+# 3.8269002623540276
 
 # max_depth=7 mse_from_scratch=3.0223585198593192 num_leaf=74
 # max_depth=8 mse_from_scratch=2.1467208239169704 -> 2.0880381921894298 num_leaf=113 ->129 (after reuse original split function)
