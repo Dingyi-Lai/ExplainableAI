@@ -13,7 +13,7 @@ from imodels import HSTreeClassifierCV, HSTreeRegressor, HSTreeRegressorCV
 
 # Create a decision tree
 # Read original Data
-data = pyreadr.read_r(Path.cwd().joinpath('ConferenceSubmission/Data/SRData.RData'))
+data = pyreadr.read_r(Path.cwd().joinpath('ConferenceSubmission/Data/SRData.RData')) # regression
 random.seed(0)
 
 X0 = data['boston'][0:50]
@@ -55,6 +55,7 @@ print(mse_sklearn3)
 # max_depth=7 mse_sklearn=3.04446734098988 num_leaf_sklearn=74
 # max_depth=8 mse_sklearn=2.08803819218943 num_leaf_sklearn=122
 
+# our codes
 X = pd.DataFrame(X)
 y = pd.DataFrame(y)
 sub_tree, feature_gain, y_above_list = decision_tree_algorithm(X, y, max_depth=2,\

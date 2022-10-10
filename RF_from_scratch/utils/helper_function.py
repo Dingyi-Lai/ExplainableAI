@@ -199,6 +199,7 @@ def determine_best_split(X, y, potential_splits, n,typ="regression",k=None):
     return int(result.best_split_column), float(result.best_split_value), rescale_gain
 
 def split_in_loop(X, y, column_index, unique_values,index,min_samples_leaf,k):
+    # speed up (multiprocessing in python)
     potential_split = (unique_values[index] + unique_values[index - 1]) / 2
     # try to split the data
     _, _, y_below, y_above = split_data(X, y, split_column=column_index, split_value=potential_split)
@@ -317,13 +318,13 @@ def create_leaf(y, typ):
 def determine_type_of_feature(df):
     
     feature_types = []
-    n_unique_values_treshold = 2
+    n_unique_values_threshold = 2
     for feature in df.columns:
         if feature != "label":
             unique_values = df[feature].unique()
             example_value = unique_values[0]
 
-            if (isinstance(example_value, str)) or (len(unique_values) <= n_unique_values_treshold):
+            if (isinstance(example_value, str)) or (len(unique_values) <= n_unique_values_threshold):
                 feature_types.append("categorical")
             else:
                 feature_types.append("continuous")
@@ -363,7 +364,7 @@ def decision_tree_algorithm(X, y, n,counter=0, min_samples_leaf=1, max_depth=8, 
         k1=counter
         # get the potential splits for the next depth
         potential_splits = get_potential_splits(X, y, random_subspace, random_state,k1, min_samples_leaf)  
-    # Check for all possible splits ONLY using the random subspace and not all features!    
+    # for HS  
     node_id = np.max(list((y_list.keys())))
     classification, feature_name = create_leaf(y, typ)
     
